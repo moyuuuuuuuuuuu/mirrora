@@ -97,7 +97,7 @@ async function saveProfile() {
   if (saving.value) return
   saving.value = true
   try {
-    if (localAvatar.value) avatar.value = (await uploadPhoto(localAvatar.value)).url
+    if (localAvatar.value) avatar.value = (await uploadPhoto(localAvatar.value, 'avatar')).url
     const profile = await updateProfile({ nickname: name, avatar: avatar.value })
     nickname.value = profile.nickname
     avatar.value = profile.avatar

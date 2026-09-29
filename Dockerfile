@@ -4,6 +4,7 @@ RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY . .
+ARG VITE_ASSET_BASE_URL=
 RUN pnpm build:h5
 
 FROM nginx:1.27-alpine
