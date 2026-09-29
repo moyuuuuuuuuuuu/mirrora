@@ -117,7 +117,7 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
 <style scoped>
 .login-page { padding-bottom: 0; }
 .login-layout { display: grid; width: 100vw; min-height: calc(100vh - var(--status-bar-height) - 74px); margin-left: calc(50% - 50vw); background: linear-gradient(120deg, #f7f8fa 0%, #eef0f3 48%, #d8dbe0 72%, #fafafa 100%); }
-.login-copy { padding: 70px max(28px, calc((100vw - 1460px) / 2 + 8vw)); display: flex; flex-direction: column; justify-content: center; }
+.login-copy { padding: 70px 80px 70px clamp(64px, calc((100vw - 1460px) / 2 + 80px), 600px); display: flex; flex-direction: column; justify-content: center; }
 .login-copy .display { margin: 24px 0; }
 .silver-line { width: 120px; height: 2px; margin-top: 55px; background: linear-gradient(90deg, #8f949b, #f9fafb, #9da2aa); }
 .motto { margin-top: 18px; font-size: 9px; letter-spacing: 4px; color: #686d75; }
@@ -146,7 +146,7 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
 .other-actions i { width: 1px; height: 18px; background: #c9cdd3; }
 @media (min-width: 900px) {
   .login-layout { grid-template-columns: 1.15fr .85fr; min-height: calc(100vh - 90px); }
-  .login-copy .display { font-size: 64px; }
+  .login-copy .display { font-size: 64px; white-space: nowrap; }
 }
 @media (max-width: 899px) {
   .login-layout { display: flex; flex-direction: column; justify-content: center; gap: 24px; min-height: calc(100vh - var(--status-bar-height) - 74px); padding: 24px 0 calc(24px + env(safe-area-inset-bottom)); }
