@@ -18,8 +18,15 @@
             <view><text>验证码</text><input v-model="code" type="number" maxlength="6" placeholder="请输入 6 位验证码" /></view>
             <button :disabled="sending || countdown > 0" @click="sendCode">{{ countdown > 0 ? `${countdown}s 后重试` : (sending ? '发送中…' : '获取验证码') }}</button>
           </view>
-          <button class="submit" :disabled="busy" @click="emailLogin">{{ busy ? '登录中…' : '登录　→' }}</button>
-          <text class="agreement">登录即表示同意服务协议与隐私政策</text>
+          <view class="consent" @click="agreed = !agreed">
+            <view class="consent-box" :class="{ checked: agreed }">{{ agreed ? '✓' : '' }}</view>
+            <text>我已阅读并同意</text>
+            <text class="legal-link" @click.stop="openLegal('agreement')">《用户协议》</text>
+            <text>和</text>
+            <text class="legal-link" @click.stop="openLegal('privacy')">《隐私政策》</text>
+          </view>
+          <button class="submit" :disabled="busy || !agreed" @click="emailLogin">{{ busy ? '登录中…' : '登录　→' }}</button>
+          <text class="password-entry" @click="passwordLogin">使用账号密码登录　→</text>
         </view>
       </view>
     </view>
@@ -37,12 +44,21 @@ const code = ref('')
 const sending = ref(false)
 const busy = ref(false)
 const countdown = ref(0)
+const agreed = ref(false)
 const redirect = ref('')
 let timer: ReturnType<typeof setInterval> | undefined
 
 onLoad((options) => { redirect.value = String(options?.redirect || '') })
 
 function validEmail() { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim()) }
+
+function passwordLogin() {
+  uni.showToast({ title: '账号密码登录暂未开放，请使用邮箱验证码登录', icon: 'none' })
+}
+
+function openLegal(type: 'agreement' | 'privacy') {
+  uni.navigateTo({ url: type === 'agreement' ? '/pages/user-agreement/index' : '/pages/privacy-policy/index' })
+}
 
 async function sendCode() {
   if (!validEmail()) {
@@ -70,6 +86,10 @@ async function sendCode() {
 }
 
 async function emailLogin() {
+  if (!agreed.value) {
+    uni.showToast({ title: '请先阅读并同意用户协议和隐私政策', icon: 'none' })
+    return
+  }
   if (!validEmail() || code.value.trim().length !== 6) {
     uni.showToast({ title: '请填写邮箱和 6 位验证码', icon: 'none' })
     return
@@ -79,7 +99,7 @@ async function emailLogin() {
   try {
     const result = await loginWithEmail(email.value.trim(), code.value.trim())
     uni.setStorageSync('mirror_token', result.token)
-    setCurrentUser({ nickname: result.nickname })
+    setCurrentUser({ nickname: result.nickname, avatar: result.avatar })
     if (redirect.value === 'tryon' || redirect.value === 'profile')
       uni.switchTab({ url: redirect.value === 'tryon' ? '/pages/tryon/index' : '/pages/profile/index' })
     else
@@ -112,6 +132,11 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
 .code button { min-width: 112px; margin: 0 0 2px 20px; padding: 0 16px; white-space: nowrap; background: none; font-size: 13px; color: #9d102b; }
 .code button[disabled] { color: #a5a8ad; }
 .submit { margin-top: 38px; border: 0; border-radius: 0; background: #a90929; color: #fff; font-family: "Songti SC", serif; }
+.consent { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; margin-top: 22px; color: #777c84; font-size: 11px; cursor: pointer; }
+.consent-box { display: grid; place-items: center; width: 15px; height: 15px; margin-right: 3px; border: 1px solid #a8abb1; color: #fff; font-size: 11px; }
+.consent-box.checked { border-color: #a90929; background: #a90929; }
+.legal-link { color: #8d1830; text-decoration: underline; text-underline-offset: 2px; }
+.password-entry { display: block; margin-top: 20px; text-align: center; font-family: "Songti SC", serif; font-size: 13px; color: #6f747c; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
 .other { margin-top: 30px; padding-top: 22px; border-top: 1px solid #d9dce1; }
 .other > text { display: block; text-align: center; font-size: 12px; color: #8b8f96; }
 .other-actions { display: flex; align-items: center; justify-content: center; gap: 17px; margin-top: 16px; }
@@ -119,13 +144,23 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
 .other-actions > view:hover { color: var(--wine); }
 .other-actions text { font-family: "Songti SC", serif; font-size: 13px; }
 .other-actions i { width: 1px; height: 18px; background: #c9cdd3; }
-.agreement { display: block; margin-top: 18px; text-align: center; font-size: 11px; color: #92969d; }
 @media (min-width: 900px) {
   .login-layout { grid-template-columns: 1.15fr .85fr; min-height: calc(100vh - 90px); }
   .login-copy .display { font-size: 64px; }
 }
 @media (max-width: 899px) {
-  .login-copy { padding: 55px 28px; }
-  .login-panel { width: calc(100% - 36px); margin-bottom: 40px; padding: 30px 24px; }
+  .login-layout { display: flex; flex-direction: column; justify-content: center; gap: 24px; min-height: calc(100vh - var(--status-bar-height) - 74px); padding: 24px 0 calc(24px + env(safe-area-inset-bottom)); }
+  .login-copy { flex: none; padding: 0 28px; }
+  .login-copy .display { margin: 12px 0 8px; font-size: 40px; }
+  .login-copy .lead { font-size: 15px; line-height: 1.65; }
+  .login-copy .silver-line { margin-top: 16px; }
+  .login-copy .motto { margin-top: 8px; }
+  .panel-area { flex: none; width: 100%; padding: 0 18px; }
+  .login-panel { width: min(100%, 506px); margin: 0 auto; padding: 26px 24px 22px; }
+  .login-panel .section-title { margin: 8px 0 18px; font-size: 28px; }
+  .field { padding: 10px 0; }
+  .submit { margin-top: 26px; }
+  .password-entry { margin-top: 15px; }
+  .consent { margin-top: 16px; }
 }
 </style>

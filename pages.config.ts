@@ -9,8 +9,10 @@ export default defineUniPages({
     {path:'pages/result/index'},
     {path:'pages/profile/index'},
     {path:'pages/tryon/index'},
-    {path:'pages/history-detail/index'}
-    ,{path:'pages/login/index'}
+    {path:'pages/history-detail/index'},
+    {path:'pages/login/index'},
+    {path:'pages/user-agreement/index'},
+    {path:'pages/privacy-policy/index'}
   ],
   globalStyle:{navigationStyle:'custom',backgroundColor:'#f4f5f7',backgroundTextStyle:'dark'},
   tabBar:{color:'#8b8e94',selectedColor:'#701f32',backgroundColor:'#ffffff',borderStyle:'white',list:[

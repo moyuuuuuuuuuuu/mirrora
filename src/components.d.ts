@@ -11,7 +11,6 @@ declare module 'vue' {
     ConsultationAside: typeof import('./components/ConsultationAside.vue')['default']
     StepHeader: typeof import('./components/StepHeader.vue')['default']
     WdCheckbox: typeof import('@wot-ui/ui/components/wd-checkbox/wd-checkbox.vue')['default']
-    WdIcon: typeof import('@wot-ui/ui/components/wd-icon/wd-icon.vue')['default']
     WdSwitch: typeof import('@wot-ui/ui/components/wd-switch/wd-switch.vue')['default']
     WdTextarea: typeof import('@wot-ui/ui/components/wd-textarea/wd-textarea.vue')['default']
   }
