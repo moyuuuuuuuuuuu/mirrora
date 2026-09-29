@@ -1,0 +1,7 @@
+.env*
+!.env.example
+node_modules/
+dist/
+src/pages.json
+src/uni-pages.d.ts
+*.log

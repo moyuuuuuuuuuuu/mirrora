@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="镜界品牌标志">
+  <defs>
+    <linearGradient id="metal" x1="8" y1="6" x2="54" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.38" stop-color="#d7dbe0"/>
+      <stop offset="0.72" stop-color="#8f959d"/>
+      <stop offset="1" stop-color="#f4f5f7"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="31" fill="#17191d"/>
+  <circle cx="32" cy="32" r="27" fill="none" stroke="#3f434a" stroke-width="1"/>
+  <path d="M17 15c12 3 19 10 19 17S29 46 17 49c7-7 10-12 10-17s-3-10-10-17Z" fill="url(#metal)"/>
+  <path d="M47 15c-12 3-19 10-19 17s7 14 19 17c-7-7-10-12-10-17s3-10 10-17Z" fill="none" stroke="url(#metal)" stroke-width="2.4" stroke-linejoin="round"/>
+  <path d="M32 13v38" stroke="#f1f2f4" stroke-width="1" opacity=".72"/>
+  <circle cx="43" cy="21" r="3.5" fill="#a90929"/>
+</svg>

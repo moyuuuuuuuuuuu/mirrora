@@ -1,0 +1,40 @@
+{
+  "name": "mirror-image-advisor-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.9.0",
+  "scripts": {
+    "dev:h5": "uni",
+    "dev:app": "uni -p app",
+    "build:h5": "uni build",
+    "build:app": "uni build -p app",
+    "build:mp-weixin": "uni build -p mp-weixin",
+    "build:mp-toutiao": "uni build -p mp-toutiao",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "3.0.0-5020420260813003",
+    "@dcloudio/uni-app-plus": "3.0.0-5020420260813003",
+    "@dcloudio/uni-components": "3.0.0-5020420260813003",
+    "@dcloudio/uni-h5": "3.0.0-5020420260813003",
+    "@dcloudio/uni-mp-toutiao": "3.0.0-5020420260813003",
+    "@dcloudio/uni-mp-weixin": "3.0.0-5020420260813003",
+    "@wot-ui/ui": "^2.3.1",
+    "vue": "~3.4.38"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "^3.4.12",
+    "@dcloudio/vite-plugin-uni": "3.0.0-5020420260813003",
+    "@uni-helper/plugin-uni": "^0.1.0",
+    "@uni-helper/vite-plugin-uni-components": "^0.2.6",
+    "@uni-helper/vite-plugin-uni-manifest": "^0.2.12",
+    "@uni-helper/vite-plugin-uni-pages": "^0.3.23",
+    "@types/node": "^20.16.2",
+    "sass": "^1.99.0",
+    "typescript": "~5.5.4",
+    "vite": "6.4.3",
+    "vue-tsc": "^2.0.29"
+  }
+}
+
