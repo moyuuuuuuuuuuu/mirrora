@@ -41,7 +41,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { getProfile, listConsultations, updateProfile, uploadPhoto, type Consultation } from '../../api'
 import { currentUser, isLoggedIn, openLogin, setCurrentUser } from '../../auth'
 import { draft, modules } from '../../state'
@@ -62,8 +63,11 @@ const saving = ref(false)
 const statusText: Record<Consultation['status'], string> = { queued: '排队中', running: '分析中', succeeded: '已完成', failed: '未完成' }
 const images: Record<string, string> = { hair: '/static/design/profile-domain-hair.webp', skin: '/static/design/profile-domain-skin.webp', outfit: '/static/design/profile-domain-outfit-clean.png', makeup: '/static/design/profile-domain-makeup-clean.png', tryon: '/static/design/profile-domain-tryon-clean.png' }
 
-onMounted(async () => {
-  if (!isLoggedIn()) { openLogin('profile'); return }
+onShow(async () => {
+  if (!isLoggedIn()) {
+    setTimeout(() => openLogin('profile'), 0)
+    return
+  }
   try {
     const [profile] = await Promise.all([getProfile(), loadConsultations(1)])
     nickname.value = profile.nickname
