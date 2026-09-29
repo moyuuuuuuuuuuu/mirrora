@@ -9,6 +9,8 @@ export const getConsultation=(id:string)=>request<Consultation>({url:`${base}/v1
 export const listConsultations=(params:{page?:number;page_size?:number;module?:string}={})=>{const query=Object.entries(params).filter(([,value])=>value!==undefined&&value!=='').map(([key,value])=>`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`).join('&');return request<ConsultationPage>({url:`${base}/v1/consultations${query?`?${query}`:''}`})}
 export const sendEmailCode=(email:string)=>request<{sent:boolean}>({url:`${base}/v1/auth/email/code`,method:'POST',data:{email}})
 export const loginWithEmail=(email:string,code:string)=>request<{token:string;email:string;nickname:string;avatar:string}>({url:`${base}/v1/auth/email/login`,method:'POST',data:{email,code}})
-export type UserProfile={email:string;nickname:string;avatar:string}
+export const loginWithPassword=(email:string,password:string)=>request<{token:string;email:string;nickname:string;avatar:string}>({url:`${base}/v1/auth/password/login`,method:'POST',data:{email,password}})
+export type UserProfile={email:string;nickname:string;avatar:string;has_password:boolean}
 export const getProfile=()=>request<UserProfile>({url:`${base}/v1/profile`})
 export const updateProfile=(data:{nickname:string;avatar:string})=>request<UserProfile>({url:`${base}/v1/profile`,method:'PUT',data})
+export const updatePassword=(data:{current_password:string;new_password:string})=>request<{updated:boolean}>({url:`${base}/v1/profile/password`,method:'PUT',data})

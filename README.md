@@ -13,5 +13,4 @@ pnpm build:mp-weixin
 pnpm build:mp-toutiao
 ```
 
-生产环境通过 `VITE_API_BASE_URL` 指向 Go API，通过 `VITE_ASSET_BASE_URL` 指向 BOS 静态资源版本目录。App 云打包仍需在 HBuilderX 中配置正式 `appid`、签名和应用市场隐私文本。
-
+生产环境通过 `VITE_API_BASE_URL` 指向 Go API。`VITE_ASSET_BASE_URL` 只用于 BOS 上的图片和字体；HTML、JavaScript、CSS 仍由 Web 容器本地提供。App 云打包仍需在 HBuilderX 中配置正式 `appid`、签名和应用市场隐私文本。

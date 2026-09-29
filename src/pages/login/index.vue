@@ -8,16 +8,18 @@
         <view class="lead">登录后继续你的咨询，<br />并保存每一次更适合自己的发现。</view>
         <view class="silver-line"></view>
         <text class="motto">A MORE YOU　/　A RICHER LIFE</text>
+        <view class="login-portrait"><image src="/static/design/consultation-side-balanced.png" mode="aspectFill" /></view>
       </view>
       <view class="panel-area">
         <view class="login-panel">
           <text class="eyebrow">EMAIL SIGN IN</text>
-          <view class="section-title">邮箱验证码登录</view>
+          <view class="section-title">{{ passwordMode ? '邮箱密码登录' : '邮箱验证码登录' }}</view>
           <view class="field"><text>邮箱</text><input v-model="email" type="text" placeholder="请输入邮箱地址" /></view>
-          <view class="field code">
+          <view v-if="!passwordMode" class="field code">
             <view><text>验证码</text><input v-model="code" type="number" maxlength="6" placeholder="请输入 6 位验证码" /></view>
             <button :disabled="sending || countdown > 0" @click="sendCode">{{ countdown > 0 ? `${countdown}s 后重试` : (sending ? '发送中…' : '获取验证码') }}</button>
           </view>
+          <view v-else class="field"><text>密码</text><input v-model="password" password placeholder="请输入密码" /></view>
           <view class="consent" @click="agreed = !agreed">
             <view class="consent-box" :class="{ checked: agreed }">{{ agreed ? '✓' : '' }}</view>
             <text>我已阅读并同意</text>
@@ -25,8 +27,8 @@
             <text>和</text>
             <text class="legal-link" @click.stop="openLegal('privacy')">《隐私政策》</text>
           </view>
-          <button class="submit" :disabled="busy || !agreed" @click="emailLogin">{{ busy ? '登录中…' : '登录　→' }}</button>
-          <text class="password-entry" @click="passwordLogin">使用账号密码登录　→</text>
+          <button class="submit" :disabled="busy || !agreed" @click="submitLogin">{{ busy ? '登录中…' : '登录　→' }}</button>
+          <text class="password-entry" @click="passwordMode = !passwordMode">{{ passwordMode ? '使用邮箱验证码登录' : '使用邮箱密码登录' }}　→</text>
         </view>
       </view>
     </view>
@@ -36,11 +38,13 @@
 <script setup lang="ts">
 import { onUnmounted, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { loginWithEmail, sendEmailCode } from '../../api'
+import { loginWithEmail, loginWithPassword, sendEmailCode } from '../../api'
 import { setCurrentUser } from '../../auth'
 
 const email = ref('')
 const code = ref('')
+const password = ref('')
+const passwordMode = ref(false)
 const sending = ref(false)
 const busy = ref(false)
 const countdown = ref(0)
@@ -51,10 +55,6 @@ let timer: ReturnType<typeof setInterval> | undefined
 onLoad((options) => { redirect.value = String(options?.redirect || '') })
 
 function validEmail() { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim()) }
-
-function passwordLogin() {
-  uni.showToast({ title: '账号密码登录暂未开放，请使用邮箱验证码登录', icon: 'none' })
-}
 
 function openLegal(type: 'agreement' | 'privacy') {
   uni.navigateTo({ url: type === 'agreement' ? '/pages/user-agreement/index' : '/pages/privacy-policy/index' })
@@ -85,19 +85,21 @@ async function sendCode() {
   }
 }
 
-async function emailLogin() {
+async function submitLogin() {
   if (!agreed.value) {
     uni.showToast({ title: '请先阅读并同意用户协议和隐私政策', icon: 'none' })
     return
   }
-  if (!validEmail() || code.value.trim().length !== 6) {
-    uni.showToast({ title: '请填写邮箱和 6 位验证码', icon: 'none' })
+  if (!validEmail() || (passwordMode.value ? password.value.length < 8 : code.value.trim().length !== 6)) {
+    uni.showToast({ title: passwordMode.value ? '请填写邮箱和至少 8 位密码' : '请填写邮箱和 6 位验证码', icon: 'none' })
     return
   }
   if (busy.value) return
   busy.value = true
   try {
-    const result = await loginWithEmail(email.value.trim(), code.value.trim())
+    const result = passwordMode.value
+      ? await loginWithPassword(email.value.trim(), password.value)
+      : await loginWithEmail(email.value.trim(), code.value.trim())
     uni.setStorageSync('mirror_token', result.token)
     setCurrentUser({ nickname: result.nickname, avatar: result.avatar })
     if (redirect.value === 'tryon' || redirect.value === 'profile')
@@ -105,7 +107,7 @@ async function emailLogin() {
     else
       uni.redirectTo({ url: '/pages/modules/index' })
   } catch {
-    uni.showToast({ title: '验证码错误或已过期', icon: 'none' })
+    uni.showToast({ title: passwordMode.value ? '邮箱或密码错误' : '验证码错误或已过期', icon: 'none' })
   } finally {
     busy.value = false
   }
@@ -117,8 +119,9 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
 <style scoped>
 .login-page { padding-bottom: 0; }
 .login-layout { display: grid; width: 100vw; min-height: calc(100vh - var(--status-bar-height) - 74px); margin-left: calc(50% - 50vw); background: linear-gradient(120deg, #f7f8fa 0%, #eef0f3 48%, #d8dbe0 72%, #fafafa 100%); }
-.login-copy { padding: 70px 80px 70px clamp(64px, calc((100vw - 1460px) / 2 + 80px), 600px); display: flex; flex-direction: column; justify-content: center; }
+.login-copy { position: relative; overflow: hidden; padding: 70px 80px 70px clamp(64px, calc((100vw - 1460px) / 2 + 80px), 600px); display: flex; flex-direction: column; justify-content: center; }
 .login-copy .display { margin: 24px 0; }
+.login-portrait { display: none; }
 .silver-line { width: 120px; height: 2px; margin-top: 55px; background: linear-gradient(90deg, #8f949b, #f9fafb, #9da2aa); }
 .motto { margin-top: 18px; font-size: 9px; letter-spacing: 4px; color: #686d75; }
 .panel-area { display: grid; place-items: center; }
@@ -146,7 +149,12 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
 .other-actions i { width: 1px; height: 18px; background: #c9cdd3; }
 @media (min-width: 900px) {
   .login-layout { grid-template-columns: 1.15fr .85fr; min-height: calc(100vh - 90px); }
+  .login-copy::after { content: 'MIRRORA'; position: absolute; left: clamp(64px, calc((100vw - 1460px) / 2 + 80px), 600px); bottom: 7%; z-index: 0; color: rgba(255, 255, 255, .58); font-family: Georgia, serif; font-size: clamp(72px, 7.5vw, 150px); letter-spacing: .14em; line-height: 1; pointer-events: none; }
+  .login-copy > :not(.login-portrait) { position: relative; z-index: 2; }
   .login-copy .display { font-size: 64px; white-space: nowrap; }
+  .login-copy .lead { max-width: 310px; }
+  .login-portrait { position: absolute; top: 50%; right: 6%; z-index: 1; display: block; width: min(34%, 360px); height: 68%; overflow: hidden; transform: translateY(-50%); border-left: 1px solid rgba(114, 119, 128, .18); opacity: .3; mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 80%, transparent 100%); }
+  .login-portrait image { width: 100%; height: 100%; filter: grayscale(1) contrast(.88); }
 }
 @media (max-width: 899px) {
   .login-layout { display: flex; flex-direction: column; justify-content: center; gap: 24px; min-height: calc(100vh - var(--status-bar-height) - 74px); padding: 24px 0 calc(24px + env(safe-area-inset-bottom)); }

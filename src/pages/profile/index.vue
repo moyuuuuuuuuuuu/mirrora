@@ -21,6 +21,15 @@
           </view>
           <button class="save-profile" :disabled="saving" @click="saveProfile">{{ saving ? '保存中…' : '保存资料' }}</button>
         </view>
+        <view class="password-card">
+          <view><text class="eyebrow">ACCOUNT SECURITY</text><view class="section-title">{{ hasPassword ? '修改登录密码' : '设置登录密码' }}</view></view>
+          <view class="password-fields">
+            <input v-if="hasPassword" v-model="currentPassword" password placeholder="当前密码" />
+            <input v-model="newPassword" password placeholder="新密码（至少 8 位）" />
+            <input v-model="confirmPassword" password placeholder="确认新密码" />
+          </view>
+          <button class="save-profile" :disabled="savingPassword" @click="savePassword">{{ savingPassword ? '保存中…' : (hasPassword ? '修改密码' : '设置密码') }}</button>
+        </view>
         <view class="profile-card">
           <image class="image-monochrome" src="/static/design/hero.webp" mode="aspectFill" />
           <view><text class="eyebrow">MY PROFILE</text><view class="section-title">私人形象档案</view><view class="lead">清晰而真实，是你独有的风格。</view><view class="traits">清晰轮廓　/　柔和质感　/　简洁线条　/　低维护</view></view>
@@ -43,7 +52,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import { getProfile, listConsultations, updateProfile, uploadPhoto, type Consultation } from '../../api'
+import { getProfile, listConsultations, updatePassword, updateProfile, uploadPhoto, type Consultation } from '../../api'
 import { currentUser, isLoggedIn, openLogin, setCurrentUser } from '../../auth'
 import { draft, modules } from '../../state'
 
@@ -60,6 +69,11 @@ const avatar = ref(currentUser.value?.avatar || '')
 const avatarPreview = ref(avatar.value)
 const localAvatar = ref('')
 const saving = ref(false)
+const hasPassword = ref(false)
+const currentPassword = ref('')
+const newPassword = ref('')
+const confirmPassword = ref('')
+const savingPassword = ref(false)
 const statusText: Record<Consultation['status'], string> = { queued: '排队中', running: '分析中', succeeded: '已完成', failed: '未完成' }
 const images: Record<string, string> = { hair: '/static/design/profile-domain-hair.webp', skin: '/static/design/profile-domain-skin.webp', outfit: '/static/design/profile-domain-outfit-clean.png', makeup: '/static/design/profile-domain-makeup-clean.png', tryon: '/static/design/profile-domain-tryon-clean.png' }
 
@@ -74,6 +88,7 @@ onShow(async () => {
     email.value = profile.email
     avatar.value = profile.avatar
     avatarPreview.value = profile.avatar
+    hasPassword.value = profile.has_password
     setCurrentUser({ nickname: profile.nickname, avatar: profile.avatar })
   } catch {}
 })
@@ -87,6 +102,21 @@ async function loadConsultations(targetPage: number) {
     completedModules.value = consultations.completed_modules
     page.value = consultations.page
   } finally { loading.value = false }
+}
+async function savePassword() {
+  if (newPassword.value.length < 8 || newPassword.value.length > 72) { uni.showToast({ title: '密码长度需为 8～72 位', icon: 'none' }); return }
+  if (newPassword.value !== confirmPassword.value) { uni.showToast({ title: '两次输入的密码不一致', icon: 'none' }); return }
+  if (savingPassword.value) return
+  savingPassword.value = true
+  try {
+    await updatePassword({ current_password: currentPassword.value, new_password: newPassword.value })
+    hasPassword.value = true
+    currentPassword.value = ''
+    newPassword.value = ''
+    confirmPassword.value = ''
+    uni.showToast({ title: '密码已保存', icon: 'success' })
+  } catch { uni.showToast({ title: hasPassword.value ? '当前密码不正确' : '密码设置失败', icon: 'none' }) }
+  finally { savingPassword.value = false }
 }
 async function changePage(targetPage: number) {
   if (loading.value || targetPage < 1 || targetPage > totalPages.value) return
@@ -123,4 +153,5 @@ function openLegal(type: 'agreement' | 'privacy') { uni.navigateTo({ url: type =
 .profile-grid{display:grid;margin-top:30px}.profile-intro{position:relative;overflow:hidden;min-height:430px;padding:28px 22px}.profile-intro:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(247,248,249,.94) 0%,rgba(247,248,249,.72) 25%,rgba(247,248,249,.08) 62%,rgba(17,19,23,.16) 100%);pointer-events:none}.profile-intro .display,.profile-intro .lead{position:relative;z-index:2}.profile-intro image{position:absolute;inset:0;width:100%;height:100%;filter:grayscale(1)}.profile-main{background:rgba(255,255,255,.75);padding:25px}.account-card{display:flex;align-items:center;gap:22px;margin-bottom:32px;padding:22px;border:1px solid var(--line);background:#fff}.avatar-editor{position:relative;width:82px;height:82px;flex:0 0 82px;overflow:hidden;border-radius:50%;cursor:pointer}.avatar-editor image{width:100%;height:100%}.avatar-editor text{position:absolute;left:0;right:0;bottom:0;padding:5px 0;background:rgba(22,24,28,.7);color:#fff;text-align:center;font-size:10px}.account-fields{flex:1}.account-fields .section-title{margin:4px 0 8px}.account-fields input{height:34px;border-bottom:1px solid #bfc3c9;font-family:"Songti SC",serif;font-size:18px}.account-fields small{display:block;margin-top:7px;color:#8b8f96}.save-profile{margin:0;padding:0 22px;border:0;border-radius:0;background:#a90929;color:#fff;font-family:"Songti SC",serif;font-size:13px}.save-profile[disabled]{opacity:.55}.profile-card{display:grid;gap:24px}.profile-card>image{width:100%;height:315px}.traits{margin-top:28px;font-family:"Songti SC",serif}.domains-title{margin-top:30px}.domain-list{display:grid;grid-template-columns:1fr 1fr;gap:10px}.domain-list>view{position:relative;height:145px;overflow:hidden;cursor:pointer;color:#fff}.domain-list image,.domain-shade{position:absolute;inset:0;width:100%;height:100%}.domain-shade{background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.7))}.domain-list text,.domain-list small{position:absolute;z-index:1;left:16px;display:block}.domain-list text{bottom:38px;font-family:"Songti SC",serif;font-size:17px}.domain-list small{bottom:16px;color:#eee}.history-head{display:flex;align-items:center;justify-content:space-between;margin-top:30px}.history{display:grid;grid-template-columns:160px minmax(180px,1fr) 90px 130px;align-items:center;column-gap:20px;margin-top:30px;border-top:1px solid var(--line);padding:18px 0;font-family:"Songti SC",serif;cursor:pointer}.history b{text-align:center}.history.pending .detail{color:#999}.status{text-align:center;font-size:13px}.status-queued,.status-running{color:#9a6a18}.status-succeeded{color:#277447}.status-failed{color:#9b3341}.detail{text-align:right}@media(max-width:620px){.account-card{align-items:flex-start;flex-wrap:wrap}.account-fields{min-width:calc(100% - 110px)}.save-profile{width:100%}.history{grid-template-columns:1fr auto;gap:10px}.history b{grid-column:1;text-align:left}.history .status{grid-column:2;grid-row:1}.history .detail{grid-column:2;grid-row:2}}@media(min-width:900px){.profile-grid{grid-template-columns:330px 1fr}.profile-intro{min-height:780px;padding:18px}.profile-main{padding:34px}.profile-card{grid-template-columns:310px 1fr}.domain-list{grid-template-columns:repeat(4,1fr)}}
 .legal-row{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:42px;padding-top:22px;border-top:1px solid var(--line);color:#777c84;font-size:12px}.legal-row text{cursor:pointer;text-decoration:underline;text-underline-offset:3px}.legal-row i{width:1px;height:12px;background:#c9cdd3}
 .pagination{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:24px}.pagination button{width:auto;margin:0;padding:0 18px;border:1px solid var(--line);border-radius:0;background:#fff;color:var(--ink);font-family:"Songti SC",serif;font-size:13px;line-height:38px}.pagination button[disabled]{opacity:.4}.pagination text{color:#666;font-size:13px}
+.password-card{display:grid;grid-template-columns:minmax(180px,.8fr) minmax(260px,1.4fr) auto;align-items:end;gap:22px;margin:-12px 0 32px;padding:22px;border:1px solid var(--line);background:rgba(255,255,255,.82)}.password-card .section-title{margin:4px 0 0;font-size:24px}.password-fields{display:grid;gap:10px}.password-fields input{height:36px;border-bottom:1px solid #bfc3c9;font-family:"Songti SC",serif;font-size:15px}@media(max-width:760px){.password-card{grid-template-columns:1fr;align-items:stretch}.password-card .save-profile{width:100%;height:42px}}
 </style>
