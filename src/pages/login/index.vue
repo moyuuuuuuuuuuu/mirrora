@@ -8,7 +8,6 @@
         <view class="lead">登录后继续你的咨询，<br />并保存每一次更适合自己的发现。</view>
         <view class="silver-line"></view>
         <text class="motto">A MORE YOU　/　A RICHER LIFE</text>
-        <view class="login-portrait"><image src="/static/design/consultation-side-balanced.png" mode="aspectFill" /></view>
       </view>
       <view class="panel-area">
         <view class="login-panel">
@@ -118,10 +117,9 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
 
 <style scoped>
 .login-page { padding-bottom: 0; }
-.login-layout { display: grid; width: 100vw; min-height: calc(100vh - var(--status-bar-height) - 74px); margin-left: calc(50% - 50vw); background: linear-gradient(120deg, #f7f8fa 0%, #eef0f3 48%, #d8dbe0 72%, #fafafa 100%); }
+.login-layout { display: grid; width: 100vw; min-height: calc(100vh - var(--status-bar-height) - 74px); margin-left: calc(50% - 50vw); background: linear-gradient(120deg, rgba(247,248,250,.76), rgba(222,225,230,.58)), url('/static/design/consultation-side-balanced.png') 58% center / cover no-repeat; }
 .login-copy { position: relative; overflow: hidden; padding: 70px 80px 70px clamp(64px, calc((100vw - 1460px) / 2 + 80px), 600px); display: flex; flex-direction: column; justify-content: center; }
 .login-copy .display { margin: 24px 0; }
-.login-portrait { display: none; }
 .silver-line { width: 120px; height: 2px; margin-top: 55px; background: linear-gradient(90deg, #8f949b, #f9fafb, #9da2aa); }
 .motto { margin-top: 18px; font-size: 9px; letter-spacing: 4px; color: #686d75; }
 .panel-area { display: grid; place-items: center; }
@@ -148,13 +146,13 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
 .other-actions text { font-family: "Songti SC", serif; font-size: 13px; }
 .other-actions i { width: 1px; height: 18px; background: #c9cdd3; }
 @media (min-width: 900px) {
-  .login-layout { grid-template-columns: 1.15fr .85fr; min-height: calc(100vh - 90px); }
+  .login-layout { grid-template-columns: 1.15fr .85fr; min-height: calc(100vh - 90px); background: linear-gradient(120deg, #f7f8fa 0%, #e2e5e9 70%, #fafafa 100%); }
+  .login-copy { background: #eef0f3; }
+  .login-copy::before { content: ''; position: absolute; inset: 0; z-index: 0; background: linear-gradient(90deg, rgba(247,248,250,.96) 0%, rgba(242,244,247,.76) 42%, rgba(223,226,231,.08) 100%), url('/static/design/consultation-side-balanced.png') center / cover no-repeat; mask-image: linear-gradient(90deg, #000 0%, #000 78%, rgba(0,0,0,.78) 88%, transparent 100%); pointer-events: none; }
   .login-copy::after { content: 'MIRRORA'; position: absolute; left: clamp(64px, calc((100vw - 1460px) / 2 + 80px), 600px); bottom: 7%; z-index: 0; color: rgba(255, 255, 255, .58); font-family: Georgia, serif; font-size: clamp(72px, 7.5vw, 150px); letter-spacing: .14em; line-height: 1; pointer-events: none; }
-  .login-copy > :not(.login-portrait) { position: relative; z-index: 2; }
+  .login-copy > * { position: relative; z-index: 2; }
   .login-copy .display { font-size: 64px; white-space: nowrap; }
   .login-copy .lead { max-width: 310px; }
-  .login-portrait { position: absolute; top: 50%; right: 6%; z-index: 1; display: block; width: min(34%, 360px); height: 68%; overflow: hidden; transform: translateY(-50%); border-left: 1px solid rgba(114, 119, 128, .18); opacity: .3; mask-image: linear-gradient(180deg, transparent 0%, #000 14%, #000 80%, transparent 100%); }
-  .login-portrait image { width: 100%; height: 100%; filter: grayscale(1) contrast(.88); }
 }
 @media (max-width: 899px) {
   .login-layout { display: flex; flex-direction: column; justify-content: center; gap: 24px; min-height: calc(100vh - var(--status-bar-height) - 74px); padding: 24px 0 calc(24px + env(safe-area-inset-bottom)); }
