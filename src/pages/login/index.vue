@@ -11,9 +11,9 @@
       </view>
       <view class="panel-area">
         <view class="login-panel">
-          <text class="eyebrow">EMAIL SIGN IN</text>
-          <view class="section-title">{{ passwordMode ? '邮箱密码登录' : '邮箱验证码登录' }}</view>
-          <view class="field"><text>邮箱</text><input v-model="email" type="text" placeholder="请输入邮箱地址" /></view>
+          <text class="eyebrow">{{ passwordMode ? 'ACCOUNT SIGN IN' : 'EMAIL SIGN IN' }}</text>
+          <view class="section-title">{{ passwordMode ? '账号密码登录' : '邮箱验证码登录' }}</view>
+          <view class="field"><text>{{ passwordMode ? '账号' : '邮箱' }}</text><input v-model="email" type="text" :placeholder="passwordMode ? '请输入账号（注册邮箱）' : '请输入邮箱地址'" /></view>
           <view v-if="!passwordMode" class="field code">
             <view><text>验证码</text><input v-model="code" type="number" maxlength="6" placeholder="请输入 6 位验证码" /></view>
             <button :disabled="sending || countdown > 0" @click="sendCode">{{ countdown > 0 ? `${countdown}s 后重试` : (sending ? '发送中…' : '获取验证码') }}</button>
@@ -27,7 +27,7 @@
             <text class="legal-link" @click.stop="openLegal('privacy')">《隐私政策》</text>
           </view>
           <button class="submit" :disabled="busy || !agreed" @click="submitLogin">{{ busy ? '登录中…' : '登录　→' }}</button>
-          <text class="password-entry" @click="passwordMode = !passwordMode">{{ passwordMode ? '使用邮箱验证码登录' : '使用邮箱密码登录' }}　→</text>
+          <text class="password-entry" @click="passwordMode = !passwordMode">{{ passwordMode ? '使用邮箱验证码登录' : '使用账号密码登录' }}　→</text>
         </view>
       </view>
     </view>
@@ -90,7 +90,7 @@ async function submitLogin() {
     return
   }
   if (!validEmail() || (passwordMode.value ? password.value.length < 8 : code.value.trim().length !== 6)) {
-    uni.showToast({ title: passwordMode.value ? '请填写邮箱和至少 8 位密码' : '请填写邮箱和 6 位验证码', icon: 'none' })
+    uni.showToast({ title: passwordMode.value ? '请填写账号（注册邮箱）和至少 8 位密码' : '请填写邮箱和 6 位验证码', icon: 'none' })
     return
   }
   if (busy.value) return
@@ -106,7 +106,7 @@ async function submitLogin() {
     else
       uni.redirectTo({ url: '/pages/modules/index' })
   } catch {
-    uni.showToast({ title: passwordMode.value ? '邮箱或密码错误' : '验证码错误或已过期', icon: 'none' })
+    uni.showToast({ title: passwordMode.value ? '账号或密码错误' : '验证码错误或已过期', icon: 'none' })
   } finally {
     busy.value = false
   }

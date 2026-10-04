@@ -9,10 +9,11 @@
       </view>
       <view v-if="loading" class="state">正在载入记录…</view>
       <view v-else-if="error" class="state">{{error}}</view>
-      <view v-else-if="item" class="record" :class="{tryon:isTryon}">
+      <view v-if="warning" class="result-warning">{{warning}}</view>
+      <view v-if="!loading&&!error&&item" class="record" :class="{tryon:isTryon,'without-result':!item.result_image_url}">
         <view class="image-panel"><text>人物原图</text><image :src="item.photo_url" mode="aspectFit"/></view>
         <view v-if="isTryon" class="image-panel garment"><text>服装参考</text><image :src="item.garment_url" mode="aspectFit"/></view>
-        <view class="image-panel"><text>{{isTryon?'试穿结果':'推荐效果'}}</text><image v-if="item.result_image_url" :src="item.result_image_url" mode="aspectFit"/><view v-else class="lead">本次咨询未返回效果图，请查看文字建议。</view></view>
+        <view v-if="item.result_image_url" class="image-panel"><text>{{isTryon?'试穿结果':'推荐效果'}}</text><image :src="item.result_image_url" mode="aspectFit"/></view>
         <view class="advice">
           <view class="section-title">{{isTryon?'本次试穿说明':'本次形象建议'}}</view>
           <view v-if="item.preferences" class="prefs"><b>我的要求</b><text>{{item.preferences}}</text></view>
@@ -28,60 +29,16 @@
 import { computed, onMounted, ref } from 'vue'
 import { getConsultation, type Consultation } from '../../api'
 import { startConsultation, modules } from '../../state'
+import { resultWarning } from '../../result-quality'
 
-function inlineMarkdown(value: string) {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/__([^_]+)__/g, '<strong>$1</strong>')
-    .replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>')
-}
-
-function renderMarkdown(value: string) {
-  const output: string[] = []
-  let list = ''
-  let paragraph: string[] = []
-  const flushParagraph = () => {
-    if (paragraph.length) output.push(`<p>${paragraph.join('<br>')}</p>`)
-    paragraph = []
-  }
-  const closeList = () => {
-    if (list) output.push(`</${list}>`)
-    list = ''
-  }
-
-  for (const line of value.replace(/\r\n?/g, '\n').split('\n')) {
-    const heading = line.match(/^(#{1,4})\s+(.+)$/)
-    const ordered = line.match(/^\s*\d+[.)]\s+(.+)$/)
-    const unordered = line.match(/^\s*[-*+]\s+(.+)$/)
-    if (heading) {
-      flushParagraph(); closeList()
-      const level = heading[1].length
-      output.push(`<h${level}>${inlineMarkdown(heading[2])}</h${level}>`)
-    } else if (ordered || unordered) {
-      flushParagraph()
-      const nextList = ordered ? 'ol' : 'ul'
-      if (list !== nextList) { closeList(); output.push(`<${nextList}>`); list = nextList }
-      output.push(`<li>${inlineMarkdown((ordered || unordered)![1])}</li>`)
-    } else if (/^\s*$/.test(line)) {
-      flushParagraph(); closeList()
-    } else {
-      closeList()
-      paragraph.push(inlineMarkdown(line))
-    }
-  }
-  flushParagraph(); closeList()
-  return output.join('')
-}
+import { renderMarkdown } from '../../markdown'
 
 const item = ref<Consultation>()
 const loading = ref(true)
 const error = ref('')
 const module = computed(() => modules[(item.value?.module || 'hair') as keyof typeof modules])
 const isTryon = computed(() => item.value?.module === 'tryon')
+const warning = computed(() => resultWarning(item.value))
 const analysisHtml = computed(() => renderMarkdown(item.value?.analysis || '本次咨询未返回文字建议。'))
 
 onMounted(async () => {
@@ -129,6 +86,10 @@ function download() {
   })
 }
 </script>
+<style scoped>
+.result-warning{padding:16px 18px;margin-bottom:18px;background:#fff4e9;border:1px solid #dec7a8;color:#74512c;font-size:14px;line-height:1.8}
+@media(min-width:900px){.record.without-result{grid-template-columns:290px 1fr}.record.tryon.without-result{grid-template-columns:1fr 1fr}}
+</style>
 
 <style scoped>
 .detail{margin-top:35px}.crumb{font-family:"Songti SC",serif;color:#676b72}.detail-head{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:22px 0}.detail-head small{display:block;color:#777;margin-top:8px}.actions{display:flex;gap:10px}.record{display:grid;gap:24px;background:rgba(255,255,255,.72);padding:18px}.image-panel>text{display:block;font-family:"Songti SC",serif;font-size:18px;margin-bottom:14px}.image-panel image{width:100%;height:420px;background:#eef0f2}.prefs{display:grid;gap:8px;padding:16px 0;border-bottom:1px solid var(--line)}.prefs b{font-family:"Songti SC",serif}.prefs text,.notice{white-space:pre-wrap;line-height:1.9}.analysis{display:block;margin-top:18px;line-height:1.9}.analysis :deep(h1),.analysis :deep(h2),.analysis :deep(h3),.analysis :deep(h4){font-family:"Songti SC",serif;line-height:1.4;margin:18px 0 8px}.analysis :deep(h1){font-size:24px}.analysis :deep(h2){font-size:21px}.analysis :deep(h3){font-size:18px}.analysis :deep(h4){font-size:16px}.analysis :deep(p){margin:8px 0}.analysis :deep(ol),.analysis :deep(ul){margin:8px 0;padding-left:24px}.analysis :deep(li){margin:4px 0}.analysis :deep(a){color:#a80e2b;text-decoration:underline}.analysis :deep(blockquote){margin:12px 0;padding:2px 14px;border-left:3px solid #a80e2b;color:#676b72}.analysis :deep(code){padding:2px 5px;background:#f1f2f3;border-radius:3px}.notice{color:#676b72;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}.state{padding:70px 20px;text-align:center;background:rgba(255,255,255,.7);color:#676b72}@media(max-width:650px){.detail-head{align-items:flex-start;flex-direction:column}.actions{width:100%;flex-direction:column}.image-panel image{height:390px}}@media(min-width:900px){.record{grid-template-columns:290px 370px 1fr}.record.tryon{grid-template-columns:1fr 1fr 1.2fr}.record.tryon .advice{grid-column:1/-1}.image-panel image{height:500px}}

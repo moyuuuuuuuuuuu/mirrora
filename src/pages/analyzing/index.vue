@@ -55,6 +55,12 @@ function describeFailure(code?: string) {
     return { message: '分析服务暂时无法连接，请稍后再试。', reference: code.slice('coze_http_'.length) }
   if (code === 'coze_output_mismatch')
     return { message: '分析已经返回，但结果不完整。为了不向你展示不可靠的建议，请重新提交一次。' }
+  if (code === 'coze_photo_not_analyzed')
+    return { message: '文字分析未能读取上传照片，本次未得到有效的针对性建议，请稍后重新咨询。' }
+  if (code === 'coze_image_missing')
+    return { message: '工作流返回了文字建议，但没有生成效果图。本次结果不完整，请稍后重新咨询。' }
+  if (code === 'coze_image_invalid' || code?.startsWith('result_image_'))
+    return { message: '效果图未能通过校验或保存，本次结果尚未完成，请稍后重新咨询。' }
   return { message: '分析服务暂时没有完成这次请求，请稍后重新提交。' }
 }
 

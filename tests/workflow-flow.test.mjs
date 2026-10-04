@@ -272,3 +272,60 @@ test('result page loads the route record even when the draft belongs to another 
   await result.emit('onLoad', { id: '' })
   assert.ok(result.state.error.value)
 })
+
+test('legacy skin records without an image show an incomplete-result warning, not a fake comparison', async () => {
+  const h = harness()
+  h.api.getConsultation = async id => ({ id, module: 'skin', status: 'succeeded', photo_url: 'https://assets.test/person', analysis: '### 可见状态\n肤色均匀。' })
+  const result = h.page('result')
+  await result.emit('onLoad', { id: 'skin-record' })
+  assert.match(result.state.warning.value, /结果不完整.*未返回效果图/)
+  assert.equal(result.state.item.value.result_image_url, undefined)
+  assert.match(result.state.analysisHtml.value, /<h3>可见状态<\/h3>/)
+  const history = h.page('history-detail')
+  history.state.item.value = result.state.item.value
+  assert.equal(history.state.warning.value, result.state.warning.value)
+})
+
+test('missing-photo analysis warns on both result and history even when an image exists', async () => {
+  const h = harness()
+  h.api.getConsultation = async id => ({ id, module: 'hair', status: 'succeeded', photo_url: 'https://assets.test/person', result_image_url: 'https://assets.test/result', analysis: '当前未接收到您上传照片的可见人物特征数据，无法提供方案。' })
+  const result = h.page('result')
+  await result.emit('onLoad', { id: 'hair-record' })
+  assert.match(result.state.warning.value, /不是针对你的有效建议/)
+  const history = h.page('history-detail')
+  history.state.item.value = result.state.item.value
+  assert.equal(history.state.warning.value, result.state.warning.value)
+})
+
+test('the real hairstyle retry missing-features reply is also rejected by the result warning', async () => {
+  const h = harness()
+  h.api.getConsultation = async id => ({ id, module: 'hair', status: 'succeeded', photo_url: 'https://assets.test/person', result_image_url: 'https://assets.test/result', analysis: '当前未获取到您上传照片中的人物可见特征信息，无法针对性制定适配的发型方案。' })
+  const result = h.page('result')
+  await result.emit('onLoad', { id: 'hair-retry-record' })
+  assert.match(result.state.warning.value, /不是针对你的有效建议/)
+})
+
+test('complete advice is formatted safely and lighting uncertainty is not an analysis failure', async () => {
+  const h = harness()
+  h.api.getConsultation = async id => ({ id, module: 'skin', status: 'succeeded', photo_url: 'https://assets.test/person', result_image_url: 'https://assets.test/result', analysis: '### 说明\n照片光线影响判断。\n1. **保留自然光泽**\n<script>alert(1)</script>' })
+  const result = h.page('result')
+  await result.emit('onLoad', { id: 'skin-record' })
+  assert.equal(result.state.warning.value, '')
+  assert.match(result.state.analysisHtml.value, /<strong>保留自然光泽<\/strong>/)
+  assert.doesNotMatch(result.state.analysisHtml.value, /<script>/)
+  assert.match(result.state.analysisHtml.value, /&lt;script&gt;/)
+})
+
+test('workflow missing-image and missing-photo failures stop polling with specific messages', async () => {
+  for (const [code, message] of [['coze_image_missing', /没有生成效果图/], ['coze_photo_not_analyzed', /未能读取上传照片/], ['result_image_invalid', /效果图未能通过校验/]]) {
+    const h = harness()
+    h.api.getConsultation = async id => ({ id, module: 'skin', status: 'failed', error_code: code })
+    const analyzing = h.page('analyzing')
+    await analyzing.emit('onLoad', { id: 'failed-record', module: 'skin' })
+    await analyzing.emit('onShow')
+    await Promise.resolve()
+    assert.match(analyzing.state.failure.value.message, message)
+    assert.equal(h.calls.navigation.length, 0)
+    assert.equal(h.timers.size, 0)
+  }
+})
