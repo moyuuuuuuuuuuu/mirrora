@@ -54,7 +54,7 @@ import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getProfile, listConsultations, updatePassword, updateProfile, uploadPhoto, type Consultation } from '../../api'
 import { currentUser, isLoggedIn, openLogin, setCurrentUser } from '../../auth'
-import { draft, modules } from '../../state'
+import { startConsultation, modules } from '../../state'
 
 const items = ref<Consultation[]>([])
 const page = ref(1)
@@ -145,7 +145,7 @@ async function saveProfile() {
 function history(key: string) { return completedModules.value.includes(key) }
 function open(item: Consultation) { if (item.status === 'succeeded') { uni.navigateTo({ url: `/pages/history-detail/index?id=${item.id}` }); return } uni.showToast({ title: item.status === 'failed' ? '本次咨询未完成，请重新发起' : '咨询还没结束，请再等等', icon: 'none' }) }
 function start() { isLoggedIn() ? uni.navigateTo({ url: '/pages/modules/index' }) : openLogin('profile') }
-function startModule(key: string) { if (!isLoggedIn()) { openLogin(key === 'tryon' ? 'tryon' : 'profile'); return } draft.module = key; key === 'tryon' ? uni.switchTab({ url: '/pages/tryon/index' }) : uni.navigateTo({ url: `/pages/preferences/index?module=${key}` }) }
+function startModule(key: string) { if (!isLoggedIn()) { openLogin(key === 'tryon' ? 'tryon' : 'profile'); return } if (key === 'tryon') { startConsultation(key); uni.switchTab({ url: '/pages/tryon/index' }) } else uni.navigateTo({ url: `/pages/preferences/index?module=${key}` }) }
 function openLegal(type: 'agreement' | 'privacy') { uni.navigateTo({ url: type === 'agreement' ? '/pages/user-agreement/index' : '/pages/privacy-policy/index' }) }
 </script>
 

@@ -15,19 +15,37 @@
 </template>
 
 <script setup lang="ts">
-import{computed,onMounted,ref}from'vue'
-import{onShow}from'@dcloudio/uni-app'
-import{createConsultation,listConsultations,uploadPhoto,type Consultation}from'../../api'
+import{computed,ref}from'vue'
+import{onShow,onHide,onUnload}from'@dcloudio/uni-app'
+import{listConsultations,type Consultation}from'../../api'
+import{submitDraft}from'../../consultation'
 import{isLoggedIn,openLogin}from'../../auth'
-import{draft}from'../../state'
+import{draft,startConsultation,setDraftPhoto,setDraftGarment}from'../../state'
 const statusText:Record<Consultation['status'],string>={queued:'排队中',running:'生成中',succeeded:'已完成',failed:'未完成'}
-const consent=ref(false),busy=ref(false),preferences=ref(draft.preferences),recent=ref<Consultation[]>([])
+const consent=ref(false),busy=ref(false),preferences=ref(''),recent=ref<Consultation[]>([])
+let sessionId=-1,active=false
+const current=()=>active&&sessionId===draft.sessionId&&draft.module==='tryon'
 const ready=computed(()=>Boolean(draft.localPhoto&&draft.localGarment&&consent.value))
-onShow(()=>{if(!isLoggedIn())openLogin('tryon')})
-onMounted(async()=>{draft.module='tryon';if(!isLoggedIn())return;try{recent.value=(await listConsultations({page_size:6,module:'tryon'})).items}catch{}})
-function choosePerson(){uni.chooseImage({count:1,sizeType:['compressed'],sourceType:['album','camera'],success:r=>{draft.localPhoto=r.tempFilePaths[0];draft.photoURL=''}})}
-function chooseGarment(){uni.chooseImage({count:1,sizeType:['compressed'],sourceType:['album','camera'],success:r=>{draft.localGarment=r.tempFilePaths[0];draft.garmentURL=''}})}
-async function submit(){if(!isLoggedIn()){openLogin('tryon');return}if(!ready.value||busy.value)return;busy.value=true;try{const[person,garment]=await Promise.all([draft.photoURL?Promise.resolve({url:draft.photoURL}):uploadPhoto(draft.localPhoto),draft.garmentURL?Promise.resolve({url:draft.garmentURL}):uploadPhoto(draft.localGarment)]);draft.photoURL=person.url;draft.garmentURL=garment.url;draft.preferences=preferences.value;const c=await createConsultation({module:'tryon',photo_url:person.url,garment_url:garment.url,presentation:draft.presentation,preferences:preferences.value,adult_confirmed:true});draft.consultationId=c.id;uni.navigateTo({url:`/pages/analyzing/index?id=${c.id}&module=${c.module}`})}catch{uni.showToast({title:'提交失败，请检查图片后重试',icon:'none'})}finally{busy.value=false}}
+onShow(async()=>{
+  active=true
+  if(draft.module!=='tryon'||draft.consultationId)startConsultation('tryon')
+  if(sessionId!==draft.sessionId){sessionId=draft.sessionId;preferences.value=draft.preferences;consent.value=false;busy.value=false}
+  if(!isLoggedIn()){openLogin('tryon');return}
+  try{const result=await listConsultations({page_size:6,module:'tryon'});if(current())recent.value=result.items}catch{}
+})
+onHide(()=>{active=false})
+onUnload(()=>{active=false})
+function choosePerson(){if(busy.value||!current())return;const session=sessionId;uni.chooseImage({count:1,sizeType:['compressed'],sourceType:['album','camera'],success:r=>{if(current()&&session===sessionId&&r.tempFilePaths[0])setDraftPhoto(r.tempFilePaths[0])}})}
+function chooseGarment(){if(busy.value||!current())return;const session=sessionId;uni.chooseImage({count:1,sizeType:['compressed'],sourceType:['album','camera'],success:r=>{if(current()&&session===sessionId&&r.tempFilePaths[0])setDraftGarment(r.tempFilePaths[0])}})}
+async function submit(){
+  if(!isLoggedIn()){openLogin('tryon');return}
+  if(!ready.value||busy.value||!current())return
+  const session=sessionId
+  busy.value=true;draft.preferences=preferences.value
+  try{const c=await submitDraft(consent.value,()=>current()&&session===sessionId);if(c)uni.navigateTo({url:`/pages/analyzing/index?id=${c.id}&module=${c.module}`})}
+  catch{if(current()&&session===sessionId)uni.showToast({title:'提交失败，请检查图片后重试',icon:'none'})}
+  finally{if(session===sessionId)busy.value=false}
+}
 function open(item:Consultation){uni.navigateTo({url:item.status==='succeeded'?`/pages/history-detail/index?id=${item.id}`:`/pages/analyzing/index?id=${item.id}&module=${item.module}`})}
 </script>
 

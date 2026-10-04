@@ -10,9 +10,9 @@
       <view v-if="loading" class="state">正在载入记录…</view>
       <view v-else-if="error" class="state">{{error}}</view>
       <view v-else-if="item" class="record" :class="{tryon:isTryon}">
-        <view class="image-panel"><text>人物原图</text><image :src="item.photo_url||'/static/design/portrait-original.webp'" mode="aspectFill"/></view>
+        <view class="image-panel"><text>人物原图</text><image :src="item.photo_url" mode="aspectFit"/></view>
         <view v-if="isTryon" class="image-panel garment"><text>服装参考</text><image :src="item.garment_url" mode="aspectFit"/></view>
-        <view class="image-panel"><text>{{isTryon?'试穿结果':'推荐效果'}}</text><image :src="item.result_image_url||'/static/design/portrait-result.webp'" mode="aspectFill"/></view>
+        <view class="image-panel"><text>{{isTryon?'试穿结果':'推荐效果'}}</text><image v-if="item.result_image_url" :src="item.result_image_url" mode="aspectFit"/><view v-else class="lead">本次咨询未返回效果图，请查看文字建议。</view></view>
         <view class="advice">
           <view class="section-title">{{isTryon?'本次试穿说明':'本次形象建议'}}</view>
           <view v-if="item.preferences" class="prefs"><b>我的要求</b><text>{{item.preferences}}</text></view>
@@ -27,7 +27,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { getConsultation, type Consultation } from '../../api'
-import { draft, modules } from '../../state'
+import { startConsultation, modules } from '../../state'
 
 function inlineMarkdown(value: string) {
   return value
@@ -82,11 +82,7 @@ const loading = ref(true)
 const error = ref('')
 const module = computed(() => modules[(item.value?.module || 'hair') as keyof typeof modules])
 const isTryon = computed(() => item.value?.module === 'tryon')
-const analysisHtml = computed(() => renderMarkdown(
-  item.value?.analysis || (isTryon.value
-    ? 'AI 生成效果仅供视觉参考，请以真实试穿和商品尺码为准。'
-    : '在保留个人气质的基础上，选择自然且容易执行的方向。'),
-))
+const analysisHtml = computed(() => renderMarkdown(item.value?.analysis || '本次咨询未返回文字建议。'))
 
 onMounted(async () => {
   const page = getCurrentPages().at(-1) as { options?: Record<string, string> } | undefined
@@ -104,16 +100,17 @@ onMounted(async () => {
 function again() {
   if (!item.value) return
   if (isTryon.value) {
-    draft.module = 'tryon'
-    draft.localPhoto = item.value.photo_url
-    draft.photoURL = item.value.photo_url
-    draft.localGarment = item.value.garment_url || ''
-    draft.garmentURL = item.value.garment_url || ''
-    draft.preferences = item.value.preferences || ''
+    startConsultation('tryon', {
+      localPhoto: item.value.photo_url,
+      photoURL: item.value.photo_url,
+      localGarment: item.value.garment_url || '',
+      garmentURL: item.value.garment_url || '',
+      presentation: item.value.presentation,
+      preferences: item.value.preferences || '',
+    })
     uni.switchTab({ url: '/pages/tryon/index' })
     return
   }
-  draft.module = item.value.module
   uni.navigateTo({ url: `/pages/preferences/index?module=${item.value.module}` })
 }
 

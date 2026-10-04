@@ -6,6 +6,7 @@ uni-app + Vue 3 + TypeScript + Wot UI。支持 H5、App、微信小程序和抖�
 
 ```bash
 pnpm install
+pnpm test
 pnpm type-check
 pnpm build:h5
 pnpm build:app
