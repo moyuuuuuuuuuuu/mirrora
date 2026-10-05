@@ -4,6 +4,7 @@ export { ApiError, errorMessage } from './api-error'
 const base=import.meta.env.VITE_API_BASE_URL||'/api'
 export type Consultation={id:string;module:string;photo_url:string;garment_url?:string;presentation:string;preferences:string;status:'queued'|'running'|'succeeded'|'failed';analysis?:string;result_image_url?:string;error_code?:string;error_detail?:string;created_at:string}
 export type ConsultationPage={items:Consultation[];page:number;page_size:number;total:number;completed_modules:string[]}
+export const MAX_RESOURCE_BYTES=5*1024*1024
 function authHeader(){const token=uni.getStorageSync('mirror_token');return token?{Authorization:`Bearer ${token}`}:{}}
 function rejected(status:number,data:unknown,token:unknown){const error=apiError(status,data);if(status===401&&token&&token===uni.getStorageSync('mirror_token'))expireSession();return error}
 function request<T>(options:UniApp.RequestOptions){
@@ -15,11 +16,22 @@ function request<T>(options:UniApp.RequestOptions){
 }
 export function uploadPhoto(path:string,kind:'avatar'|'upload'='upload'){
   const token=uni.getStorageSync('mirror_token')
-  return new Promise<{url:string}>((resolve,reject)=>uni.uploadFile({url:`${base}/v1/assets`,filePath:path,name:'file',formData:{kind},header:authHeader(),timeout:60000,success:r=>{
-    if(token!==uni.getStorageSync('mirror_token')){reject(new ApiError(409,'session_changed'));return}
-    if(r.statusCode!==201){reject(rejected(r.statusCode,r.data,token));return}
-    try{const data=JSON.parse(r.data);if(typeof data.url!=='string')throw new Error('invalid_upload_response');resolve(data)}catch{reject(new ApiError(502,'invalid_upload_response'))}
-  },fail:reject}))
+  return new Promise<{url:string}>((resolve,reject)=>{
+    const send=()=>{
+      if(token!==uni.getStorageSync('mirror_token')){reject(new ApiError(409,'session_changed'));return}
+      uni.uploadFile({url:`${base}/v1/assets`,filePath:path,name:'file',formData:{kind},header:authHeader(),timeout:60000,success:r=>{
+        if(token!==uni.getStorageSync('mirror_token')){reject(new ApiError(409,'session_changed'));return}
+        if(r.statusCode!==201){reject(rejected(r.statusCode,r.data,token));return}
+        try{const data=JSON.parse(r.data);if(typeof data.url!=='string')throw new Error('invalid_upload_response');resolve(data)}catch{reject(new ApiError(502,'invalid_upload_response'))}
+      },fail:reject})
+    }
+    if(kind==='avatar'){send();return}
+    uni.getFileInfo({filePath:path,success:file=>{
+      if(!Number.isSafeInteger(file.size)||file.size<=0){reject(new ApiError(422,'invalid_photo'));return}
+      if(file.size>MAX_RESOURCE_BYTES){reject(new ApiError(413,'coze_resource_too_large'));return}
+      send()
+    },fail:()=>reject(new ApiError(422,'invalid_photo'))})
+  })
 }
 export const createConsultation=(data:Record<string,unknown>)=>request<Consultation>({url:`${base}/v1/consultations`,method:'POST',data})
 export const getConsultation=(id:string)=>request<Consultation>({url:`${base}/v1/consultations/${id}`})

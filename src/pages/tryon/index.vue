@@ -2,7 +2,7 @@
   <view class="page tryon-page">
     <AppHeader />
     <view class="content">
-      <view class="hero-copy"><text class="eyebrow">VIRTUAL TRY-ON · 2D</text><view class="display">试衣间</view><view class="lead">上传一张本人全身照和一张服装图，单件或套装均可，生成写实试穿效果。</view></view>
+      <view class="hero-copy"><text class="eyebrow">VIRTUAL TRY-ON · 2D</text><view class="display">试衣间</view><view class="lead">上传一张本人全身照和一张服装图，单件或套装均可，生成写实试穿效果。每张图片不超过 5 MB。</view></view>
       <view class="upload-grid">
         <view class="upload-card" @click="choosePerson"><view class="card-head"><b>01</b><text>本人全身照</text></view><image v-if="draft.localPhoto" :src="draft.localPhoto" mode="aspectFit"/><view v-else class="empty"><text class="upload-mark">＋</text><b>上传或拍摄全身照</b><small>自然站立、全身入镜、光线清晰</small></view><view class="ghost-btn editorial-btn">{{draft.localPhoto?'更换人物照片':'选择人物照片'}}</view></view>
         <view class="upload-card" @click="chooseGarment"><view class="card-head"><b>02</b><text>服装图</text></view><image v-if="draft.localGarment" :src="draft.localGarment" mode="aspectFit"/><view v-else class="empty"><text class="upload-mark">＋</text><b>上传服装图片</b><small>单件或套装均可，优先无遮挡、完整展示</small></view><view class="ghost-btn editorial-btn">{{draft.localGarment?'更换服装图片':'选择服装图片'}}</view></view>

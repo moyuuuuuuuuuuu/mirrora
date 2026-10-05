@@ -307,6 +307,17 @@ test('the real hairstyle retry missing-features reply is also rejected by the re
   assert.match(result.state.warning.value, /不是针对你的有效建议/)
 })
 
+test('the real generated-image record with missing uploaded portrait is warned on result and history', async () => {
+  const h = harness()
+  h.api.getConsultation = async id => ({ id, module: 'hair', status: 'succeeded', photo_url: 'https://assets.test/person', result_image_url: 'https://assets.test/result', analysis: '### 说明\n当前未接收到您上传的待分析实拍照片，无法观察脸部轮廓比例、发际线、头型、发量发质、当前发型等核心可见特征。' })
+  const result = h.page('result')
+  await result.emit('onLoad', { id: 'hair-missing-portrait' })
+  assert.match(result.state.warning.value, /不是针对你的有效建议/)
+  const history = h.page('history-detail')
+  history.state.item.value = result.state.item.value
+  assert.equal(history.state.warning.value, result.state.warning.value)
+})
+
 test('complete advice is formatted safely and lighting uncertainty is not an analysis failure', async () => {
   const h = harness()
   h.api.getConsultation = async id => ({ id, module: 'skin', status: 'succeeded', photo_url: 'https://assets.test/person', result_image_url: 'https://assets.test/result', analysis: '### 说明\n照片光线影响判断。\n1. **保留自然光泽**\n<script>alert(1)</script>' })

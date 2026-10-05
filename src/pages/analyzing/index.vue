@@ -32,7 +32,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onLoad, onShow, onHide, onUnload } from '@dcloudio/uni-app'
-import { getConsultation, ApiError } from '../../api'
+import { getConsultation, ApiError, errorMessage } from '../../api'
 
 const activeModule = ref('hair')
 const isTryon = computed(() => activeModule.value === 'tryon')
@@ -49,6 +49,8 @@ function stopPolling() {
 }
 
 function describeFailure(code?: string) {
+  if (code === 'coze_photo_too_large' || code === 'coze_garment_too_large' || code === 'asset_unavailable')
+    return { message: errorMessage(new ApiError(422, code), '上传图片无法用于分析，请重新上传。') }
   if (code === 'execution_interrupted')
     return { message: '服务在处理过程中中断，本次请求不会自动重复执行，请重新发起咨询。' }
   if (code === 'execution_timeout')
