@@ -3,7 +3,8 @@ WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY patches ./patches
-RUN pnpm install --frozen-lockfile
+# Corepack uses Node's opt-in proxy support for the initial pnpm download.
+RUN NODE_USE_ENV_PROXY=1 pnpm install --frozen-lockfile
 COPY . .
 ARG VITE_ASSET_BASE_URL=
 RUN mkdir -p dist/bos-upload && pnpm build:h5
