@@ -17,7 +17,7 @@
 <script setup lang="ts">
 import{computed,ref}from'vue'
 import{onShow,onHide,onUnload}from'@dcloudio/uni-app'
-import{listConsultations,type Consultation}from'../../api'
+import{listConsultations,errorMessage,type Consultation}from'../../api'
 import{submitDraft}from'../../consultation'
 import{isLoggedIn,openLogin}from'../../auth'
 import{draft,startConsultation,setDraftPhoto,setDraftGarment}from'../../state'
@@ -43,7 +43,7 @@ async function submit(){
   const session=sessionId
   busy.value=true;draft.preferences=preferences.value
   try{const c=await submitDraft(consent.value,()=>current()&&session===sessionId);if(c)uni.navigateTo({url:`/pages/analyzing/index?id=${c.id}&module=${c.module}`})}
-  catch{if(current()&&session===sessionId)uni.showToast({title:'提交失败，请检查图片后重试',icon:'none'})}
+  catch(error){if(current()&&session===sessionId)uni.showToast({title:errorMessage(error,'提交失败，请检查图片后重试'),icon:'none'})}
   finally{if(session===sessionId)busy.value=false}
 }
 function open(item:Consultation){uni.navigateTo({url:item.status==='succeeded'?`/pages/history-detail/index?id=${item.id}`:`/pages/analyzing/index?id=${item.id}&module=${item.module}`})}

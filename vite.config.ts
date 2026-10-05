@@ -12,12 +12,23 @@ export default defineConfig(async ({ command, mode }) => {
   // config first so clean builds do not strip the router using a one-page stub.
   await new PageContext(pagesOptions, process.cwd()).updatePagesJSON()
   const env = loadEnv(mode, process.cwd(), 'VITE_')
+  const platform = process.env.UNI_PLATFORM || 'h5'
+  if (command === 'build' && platform !== 'h5' && process.env.MIRRORA_ALLOW_DEMO_BUILD !== '1') {
+    const apiURL = env.VITE_API_BASE_URL || process.env.VITE_API_BASE_URL || ''
+    let validAPI = false
+    try { const url = new URL(apiURL); validAPI = url.protocol === 'https:' && !url.username && !url.password && url.hostname !== 'localhost' && !/^127\./.test(url.hostname) } catch {}
+    if (!validAPI) throw new Error('Native release builds require VITE_API_BASE_URL to be an absolute production HTTPS URL')
+    const name = ({ app: 'VITE_UNI_APP_ID', 'mp-weixin': 'VITE_WEIXIN_APP_ID', 'mp-toutiao': 'VITE_TOUTIAO_APP_ID' } as Record<string, string>)[platform]
+    const appID = name ? (process.env[name] || env[name] || '') : ''
+    if (name && (!appID || /mirror|replace|placeholder/i.test(appID))) throw new Error(`Native release builds require a real ${name}`)
+  }
+
   const bosBase = (env.VITE_ASSET_BASE_URL || '').trim().replace(/\/+$/, '')
   const useBOS = command === 'build' && process.env.UNI_PLATFORM === 'h5' && bosBase !== ''
   if (useBOS) {
     const url = new URL(bosBase)
-    if (url.protocol !== 'https:' || url.pathname !== '/' || url.search || url.hash || url.username || url.password) {
-      throw new Error('VITE_ASSET_BASE_URL must be an HTTPS origin, for example https://mirrora.bj.bcebos.com')
+    if (url.protocol !== 'https:' || (url.pathname !== '/' && !/^\/releases\/[a-zA-Z0-9_-]+\/?$/.test(url.pathname)) || url.search || url.hash || url.username || url.password) {
+      throw new Error('VITE_ASSET_BASE_URL must be an HTTPS origin or origin/releases/<release-id>')
     }
   }
   const bosStaticPlugin: Plugin = {

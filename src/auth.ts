@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { draft, startConsultation } from './state'
 
 export type SessionUser = { nickname: string; avatar?: string }
 
@@ -28,4 +29,13 @@ export function setCurrentUser(user: SessionUser | null) {
     uni.setStorageSync('mirror_user', user)
   else
     uni.removeStorageSync('mirror_user')
+}
+
+export function expireSession() {
+  uni.removeStorageSync('mirror_token')
+  setCurrentUser(null)
+  startConsultation(draft.module)
+  const pages = getCurrentPages()
+  if (pages.at(-1)?.route !== 'pages/login/index')
+    openLogin('profile')
 }

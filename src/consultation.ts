@@ -3,6 +3,10 @@ import { draft } from './state'
 
 export async function submitDraft(adultConfirmed: boolean, isActive: () => boolean) {
   // Keep the workflow and its inputs together even if the user starts another consultation.
+  const fingerprint = JSON.stringify([draft.module, draft.localPhoto, draft.localGarment, draft.presentation, draft.preferences, draft.includeBeauty])
+  if (draft.submissionFingerprint && draft.submissionFingerprint !== fingerprint)
+    draft.requestId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+  draft.submissionFingerprint = fingerprint
   const snapshot = { ...draft }
   const current = () => isActive() && draft.sessionId === snapshot.sessionId
     && draft.module === snapshot.module && draft.localPhoto === snapshot.localPhoto
@@ -20,6 +24,7 @@ export async function submitDraft(adultConfirmed: boolean, isActive: () => boole
   draft.photoURL = person.url
   draft.garmentURL = garment.url
   const consultation = await createConsultation({
+    request_id: snapshot.requestId,
     module: snapshot.module,
     photo_url: person.url,
     ...(snapshot.module === 'tryon' ? { garment_url: garment.url } : {}),

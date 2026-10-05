@@ -4,6 +4,7 @@ import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import test from 'node:test'
+class ApiError extends Error { constructor(status, code) { super(code); this.status=status; this.code=code } }
 import * as vue from 'vue'
 import { compileScript, parse } from 'vue/compiler-sfc'
 import ts from 'typescript'
@@ -22,6 +23,7 @@ function harness() {
   const cache = new Map(), timers = new Map()
   let hooks, selectedPhoto = '', query = {}, timerId = 0
   const api = {
+    ApiError, errorMessage: (_, fallback) => fallback,
     async uploadPhoto(path) { calls.uploads.push(path); return { url: `https://assets.test/${path}` } },
     async createConsultation(data) { calls.creates.push(data); return { ...data, id: `record-${calls.creates.length}`, status: 'queued' } },
     async getConsultation(id) { calls.gets.push(id); return { id, module: 'outfit', status: 'succeeded', photo_url: 'https://assets.test/outfit', analysis: '穿搭建议' } },
@@ -34,7 +36,7 @@ function harness() {
   }
   const lifecycle = Object.fromEntries(['onLoad', 'onShow', 'onHide', 'onUnload'].map(name => [name, callback => { hooks[name] = callback }]))
   const fakeVue = { ...vue, onMounted(callback) { hooks.onMounted = callback }, onUnmounted(callback) { hooks.onUnmounted = callback } }
-  const auth = { isLoggedIn: () => true, openLogin() {}, currentUser: vue.ref({ nickname: 'test' }), setCurrentUser() {} }
+  const auth = { expireSession() {}, isLoggedIn: () => true, openLogin() {}, currentUser: vue.ref({ nickname: 'test' }), setCurrentUser() {} }
   function load(file) {
     if (cache.has(file)) return cache.get(file)
     let source = readFileSync(file, 'utf8')
@@ -327,5 +329,29 @@ test('workflow missing-image and missing-photo failures stop polling with specif
     assert.match(analyzing.state.failure.value.message, message)
     assert.equal(h.calls.navigation.length, 0)
     assert.equal(h.timers.size, 0)
+  }
+})
+
+test('lost creation response retries the same ID; changing input creates a new ID', async () => {
+  const h = harness()
+  h.startConsultation('hair', { localPhoto: 'portrait.jpg', photoURL: 'https://assets.test/portrait.jpg' })
+  h.api.createConsultation = async data => { h.calls.creates.push(data); if (h.calls.creates.length === 1) throw new Error('lost response'); return { id: 'same-record', status: 'queued' } }
+  await assert.rejects(h.submitDraft(true, () => true), /lost response/)
+  await h.submitDraft(true, () => true)
+  assert.equal(h.calls.creates[0].request_id, h.calls.creates[1].request_id)
+  assert.ok(h.calls.creates[0].request_id)
+  h.draft.preferences = 'changed request'
+  await h.submitDraft(true, () => true)
+  assert.notEqual(h.calls.creates[1].request_id, h.calls.creates[2].request_id)
+})
+
+test('analysis stops polling after unauthorized, missing record or five network failures', async () => {
+  for (const error of [new ApiError(401, 'login_required'), new ApiError(404, 'not_found'), new Error('offline')]) {
+    const h = harness(), page = h.page('analyzing')
+    h.api.getConsultation = async () => { h.calls.gets.push('failure'); throw error }
+    await page.emit('onLoad', { id: 'record-a', module: 'hair' }); await page.emit('onShow')
+    for (let i = 0; i < 6; i++) { for (const timer of [...h.timers.values()]) await timer() }
+    assert.equal(h.timers.size, 0)
+    assert.equal(h.calls.gets.length, error instanceof ApiError ? 1 : 5)
   }
 })

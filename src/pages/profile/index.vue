@@ -50,10 +50,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getProfile, listConsultations, updatePassword, updateProfile, uploadPhoto, type Consultation } from '../../api'
-import { currentUser, isLoggedIn, openLogin, setCurrentUser } from '../../auth'
+import { currentUser, isLoggedIn, openLogin, setCurrentUser, expireSession } from '../../auth'
 import { startConsultation, modules } from '../../state'
 
 const items = ref<Consultation[]>([])
@@ -74,11 +74,18 @@ const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
 const savingPassword = ref(false)
+function clearProfile() {
+  items.value = []; total.value = 0; completedModules.value = []; page.value = 1
+  nickname.value = ''; email.value = ''; avatar.value = ''; avatarPreview.value = ''; localAvatar.value = ''
+  hasPassword.value = false; currentPassword.value = ''; newPassword.value = ''; confirmPassword.value = ''
+}
+watch(currentUser, user => { if (!user) clearProfile() }, { flush: 'sync' })
 const statusText: Record<Consultation['status'], string> = { queued: '排队中', running: '分析中', succeeded: '已完成', failed: '未完成' }
 const images: Record<string, string> = { hair: '/static/design/profile-domain-hair.webp', skin: '/static/design/profile-domain-skin.webp', outfit: '/static/design/profile-domain-outfit-clean.png', makeup: '/static/design/profile-domain-makeup-clean.png', tryon: '/static/design/profile-domain-tryon-clean.png' }
 
 onShow(async () => {
   if (!isLoggedIn()) {
+    clearProfile()
     setTimeout(() => openLogin('profile'), 0)
     return
   }
@@ -90,7 +97,7 @@ onShow(async () => {
     avatarPreview.value = profile.avatar
     hasPassword.value = profile.has_password
     setCurrentUser({ nickname: profile.nickname, avatar: profile.avatar })
-  } catch {}
+  } catch { uni.showToast({ title: '资料暂时无法读取，请稍后重试', icon: 'none' }) }
 })
 
 async function loadConsultations(targetPage: number) {
@@ -114,7 +121,8 @@ async function savePassword() {
     currentPassword.value = ''
     newPassword.value = ''
     confirmPassword.value = ''
-    uni.showToast({ title: '密码已保存', icon: 'success' })
+    uni.showToast({ title: '密码已保存，请重新登录', icon: 'success' })
+    expireSession()
   } catch { uni.showToast({ title: hasPassword.value ? '当前密码不正确' : '密码设置失败', icon: 'none' }) }
   finally { savingPassword.value = false }
 }

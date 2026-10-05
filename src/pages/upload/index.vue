@@ -3,6 +3,7 @@
 import{ref}from'vue'
 import{onLoad,onShow,onHide,onUnload}from'@dcloudio/uni-app'
 import{draft,setDraftPhoto}from'../../state'
+import{errorMessage}from'../../api'
 import{submitDraft}from'../../consultation'
 const consent=ref(false),busy=ref(false),pageModule=ref(draft.module)
 let sessionId=draft.sessionId,active=false
@@ -17,7 +18,7 @@ async function submit(){
   if(!draft.localPhoto||!consent.value||busy.value||!current())return
   busy.value=true
   try{const c=await submitDraft(consent.value,current);if(c)uni.redirectTo({url:`/pages/analyzing/index?id=${c.id}&module=${c.module}`})}
-  catch{if(current())uni.showToast({title:'提交失败，请稍后重试',icon:'none'})}
+  catch(error){if(current())uni.showToast({title:errorMessage(error,'提交失败，请稍后重试'),icon:'none'})}
   finally{busy.value=false}
 }
 </script>

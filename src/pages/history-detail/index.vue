@@ -32,6 +32,9 @@ import { startConsultation, modules } from '../../state'
 import { resultWarning } from '../../result-quality'
 
 import { renderMarkdown } from '../../markdown'
+// #ifdef H5
+import { downloadInBrowser, openImageInBrowser } from '../../download'
+// #endif
 
 const item = ref<Consultation>()
 const loading = ref(true)
@@ -71,20 +74,29 @@ function again() {
   uni.navigateTo({ url: `/pages/preferences/index?module=${item.value.module}` })
 }
 
-function download() {
-  const url = item.value?.result_image_url
-  if (!url) return
+async function download() {
+  if (!item.value?.result_image_url) return
   uni.showLoading({ title: '正在保存' })
-  uni.downloadFile({
-    url,
-    success: res => {
-      if (res.statusCode !== 200) return uni.showToast({ title: '下载失败', icon: 'none' })
-      uni.saveImageToPhotosAlbum({ filePath: res.tempFilePath, success: () => uni.showToast({ title: '已保存到相册' }), fail: () => uni.showToast({ title: '保存失败，请检查相册权限', icon: 'none' }) })
-    },
-    fail: () => uni.showToast({ title: '下载失败', icon: 'none' }),
-    complete: () => uni.hideLoading(),
-  })
+  let url = ''
+  try {
+    // Refresh short-lived links before saving a page left open for a while.
+    const latest = await getConsultation(item.value.id)
+    url = latest.result_image_url || ''
+    if (!url) throw new Error('image_unavailable')
+    // #ifdef H5
+    try { await downloadInBrowser(url, `mirrora-${latest.id}.png`) }
+    catch { openImageInBrowser(url); uni.showToast({ title: '可在打开的图片页保存', icon: 'none' }) }
+    // #endif
+    // #ifndef H5
+    const res = await uni.downloadFile({ url })
+    if (res.statusCode !== 200) throw new Error('download_failed')
+    await uni.saveImageToPhotosAlbum({ filePath: res.tempFilePath })
+    uni.showToast({ title: '已保存到相册', icon: 'success' })
+    // #endif
+  } catch { uni.showToast({ title: '保存失败，请稍后重试', icon: 'none' }) }
+  finally { uni.hideLoading() }
 }
+
 </script>
 <style scoped>
 .result-warning{padding:16px 18px;margin-bottom:18px;background:#fff4e9;border:1px solid #dec7a8;color:#74512c;font-size:14px;line-height:1.8}

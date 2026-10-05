@@ -32,7 +32,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onLoad, onShow, onHide, onUnload } from '@dcloudio/uni-app'
-import { getConsultation } from '../../api'
+import { getConsultation, ApiError } from '../../api'
 
 const activeModule = ref('hair')
 const isTryon = computed(() => activeModule.value === 'tryon')
@@ -49,8 +49,12 @@ function stopPolling() {
 }
 
 function describeFailure(code?: string) {
+  if (code === 'execution_interrupted')
+    return { message: '服务在处理过程中中断，本次请求不会自动重复执行，请重新发起咨询。' }
+  if (code === 'execution_timeout')
+    return { message: '本次分析等待超时，请稍后重新发起咨询。' }
   if (code === 'coze_api_6031')
-    return { message: '分析服务正在更新，当前模块暂时不可用。我们没有消耗或生成不完整的结果，请稍后再试。', reference: '6031' }
+    return { message: '分析服务正在更新，当前模块暂时不可用，请稍后再试。', reference: '6031' }
   if (code?.startsWith('coze_http_'))
     return { message: '分析服务暂时无法连接，请稍后再试。', reference: code.slice('coze_http_'.length) }
   if (code === 'coze_output_mismatch')
@@ -84,13 +88,16 @@ onShow(() => {
     return
   }
   const currentVisit = visit
-  let refreshing = false
+  let refreshing = false, errors = 0
+  const deadline = Date.now() + 12 * 60 * 1000
   const refresh = async () => {
     if (refreshing || failure.value || visit !== currentVisit) return
+    if (Date.now() >= deadline) { failure.value = { message: '等待时间较长，请到我的档案查看任务状态。' }; stopPolling(); return }
     refreshing = true
     try {
       const consultation = await getConsultation(consultationId)
       if (visit !== currentVisit) return
+      errors = 0
       activeModule.value = consultation.module
       if (consultation.status === 'succeeded') {
         stopPolling()
@@ -101,7 +108,17 @@ onShow(() => {
         stopPolling()
       }
     }
-    catch {}
+    catch (error) {
+      if (visit !== currentVisit) return
+      errors++
+      if (error instanceof ApiError && (error.status === 401 || error.status === 404)) {
+        failure.value = { message: error.status === 401 ? '登录已过期，请重新登录后查看记录。' : '本次咨询记录不存在，请到我的档案查看。' }
+        stopPolling()
+      } else if (errors >= 5) {
+        failure.value = { message: '暂时无法读取任务状态，请到我的档案查看，已有请求会继续处理。' }
+        stopPolling()
+      }
+    }
     finally { refreshing = false }
   }
   timer = setInterval(() => {

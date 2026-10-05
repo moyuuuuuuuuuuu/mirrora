@@ -37,7 +37,7 @@
 <script setup lang="ts">
 import { onUnmounted, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
-import { loginWithEmail, loginWithPassword, sendEmailCode } from '../../api'
+import { loginWithEmail, loginWithPassword, sendEmailCode, errorMessage } from '../../api'
 import { setCurrentUser } from '../../auth'
 
 const email = ref('')
@@ -77,8 +77,8 @@ async function sendCode() {
         timer = undefined
       }
     }, 1000)
-  } catch {
-    uni.showToast({ title: '发送失败，请检查邮箱服务配置', icon: 'none' })
+  } catch (error) {
+    uni.showToast({ title: errorMessage(error, '验证码发送失败，请稍后再试'), icon: 'none' })
   } finally {
     sending.value = false
   }
@@ -105,8 +105,8 @@ async function submitLogin() {
       uni.switchTab({ url: redirect.value === 'tryon' ? '/pages/tryon/index' : '/pages/profile/index' })
     else
       uni.redirectTo({ url: '/pages/modules/index' })
-  } catch {
-    uni.showToast({ title: passwordMode.value ? '账号或密码错误' : '验证码错误或已过期', icon: 'none' })
+  } catch (error) {
+    uni.showToast({ title: errorMessage(error, passwordMode.value ? '账号或密码错误' : '验证码错误或已过期'), icon: 'none' })
   } finally {
     busy.value = false
   }
