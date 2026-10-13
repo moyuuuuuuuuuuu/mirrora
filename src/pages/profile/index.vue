@@ -37,7 +37,7 @@
         <view class="section-title domains-title">形象领域</view>
         <view class="domain-list"><view v-for="(m, key) in modules" :key="key" @click="startModule(key)"><image class="image-monochrome" :src="images[key]" mode="aspectFill" /><view class="domain-shade"></view><text>{{ m.name }}</text><small>{{ history(key) ? '已完成' : '待开启' }}　→</small></view></view>
         <view class="history-head"><view class="section-title">咨询记录</view><view class="editorial-btn" @click="start">开始新的咨询　→</view></view>
-        <view v-for="x in items" :key="x.id" class="history" :class="{ pending: x.status === 'queued' || x.status === 'running' }" @click="open(x)"><text>{{ new Date(x.created_at).toLocaleDateString() }}</text><b>{{ modules[x.module as keyof typeof modules]?.name }}咨询</b><text class="status" :class="`status-${x.status}`">{{ statusText[x.status] }}</text><text class="detail">{{ x.status === 'succeeded' ? '查看详情' : '暂不可查看' }}　→</text></view>
+        <view v-for="x in items" :key="x.id" class="history" :class="{ pending: x.status === 'queued' || x.status === 'running' }" @click="open(x)"><text>{{ new Date(x.created_at).toLocaleDateString() }}</text><b>{{ modules[x.module as keyof typeof modules]?.name }}咨询</b><text class="status" :class="`status-${x.status}`">{{ resultWarning(x) ? '需要重新咨询' : statusText[x.status] }}</text><text class="detail">{{ x.status === 'failed' ? '重新咨询' : x.status === 'succeeded' ? '查看详情' : '暂不可查看' }}　→</text><text v-if="x.error_code==='coze_photo_not_analyzed' || resultWarning(x)" class="lead">{{resultWarning(x) || '未能读取照片，未获得有效建议。'}}</text></view>
         <view v-if="totalPages > 1" class="pagination">
           <button :disabled="page === 1 || loading" @click="changePage(page - 1)">上一页</button>
           <text>第 {{ page }} / {{ totalPages }} 页</text>
@@ -54,6 +54,7 @@ import { computed, ref, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { getProfile, listConsultations, updatePassword, updateProfile, uploadPhoto, type Consultation } from '../../api'
 import { currentUser, isLoggedIn, openLogin, setCurrentUser, expireSession } from '../../auth'
+import { resultWarning } from '../../result-quality'
 import { startConsultation, modules } from '../../state'
 
 const items = ref<Consultation[]>([])
@@ -151,7 +152,7 @@ async function saveProfile() {
   finally { saving.value = false }
 }
 function history(key: string) { return completedModules.value.includes(key) }
-function open(item: Consultation) { if (item.status === 'succeeded') { uni.navigateTo({ url: `/pages/history-detail/index?id=${item.id}` }); return } uni.showToast({ title: item.status === 'failed' ? '本次咨询未完成，请重新发起' : '咨询还没结束，请再等等', icon: 'none' }) }
+function open(item: Consultation) { if(item.status==='failed'){startModule(item.module);return}  if (item.status === 'succeeded') { uni.navigateTo({ url: `/pages/history-detail/index?id=${item.id}` }); return } uni.showToast({ title: '咨询还没结束，请再等等', icon: 'none' }) }
 function start() { isLoggedIn() ? uni.navigateTo({ url: '/pages/modules/index' }) : openLogin('profile') }
 function startModule(key: string) { if (!isLoggedIn()) { openLogin(key === 'tryon' ? 'tryon' : 'profile'); return } if (key === 'tryon') { startConsultation(key); uni.switchTab({ url: '/pages/tryon/index' }) } else uni.navigateTo({ url: `/pages/preferences/index?module=${key}` }) }
 function openLegal(type: 'agreement' | 'privacy') { uni.navigateTo({ url: type === 'agreement' ? '/pages/user-agreement/index' : '/pages/privacy-policy/index' }) }
@@ -163,3 +164,5 @@ function openLegal(type: 'agreement' | 'privacy') { uni.navigateTo({ url: type =
 .pagination{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:24px}.pagination button{width:auto;margin:0;padding:0 18px;border:1px solid var(--line);border-radius:0;background:#fff;color:var(--ink);font-family:"Songti SC",serif;font-size:13px;line-height:38px}.pagination button[disabled]{opacity:.4}.pagination text{color:#666;font-size:13px}
 .password-card{display:grid;grid-template-columns:minmax(180px,.8fr) minmax(260px,1.4fr) auto;align-items:end;gap:22px;margin:-12px 0 32px;padding:22px;border:1px solid var(--line);background:rgba(255,255,255,.82)}.password-card .section-title{margin:4px 0 0;font-size:24px}.password-fields{display:grid;gap:10px}.password-fields input{height:36px;border-bottom:1px solid #bfc3c9;font-family:"Songti SC",serif;font-size:15px}@media(max-width:760px){.password-card{grid-template-columns:1fr;align-items:stretch}.password-card .save-profile{width:100%;height:42px}}
 </style>
+
+<style scoped>.history>.lead{grid-column:1/-1;font-size:13px;color:#9b3341}</style>

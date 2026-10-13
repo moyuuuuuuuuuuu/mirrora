@@ -18,7 +18,7 @@ const deferred = () => {
 }
 
 // Execute the actual page scripts with uni-app lifecycle/navigation and network calls stubbed.
-function harness() {
+function harness(storage = new Map()) {
   const calls = { uploads: [], creates: [], navigation: [], gets: [] }
   const cache = new Map(), timers = new Map()
   let hooks, selectedPhoto = '', query = {}, timerId = 0
@@ -30,6 +30,9 @@ function harness() {
     async listConsultations() { return { items: [] } },
   }
   const uni = {
+    getStorageSync(key) { return storage.get(key) },
+    setStorageSync(key, value) { storage.set(key, structuredClone(value)) },
+    removeStorageSync(key) { storage.delete(key) },
     chooseImage(options) { options.success({ tempFilePaths: [selectedPhoto] }) },
     showToast() {},
     ...Object.fromEntries(['navigateTo', 'redirectTo', 'switchTab', 'navigateBack'].map(method => [method, options => calls.navigation.push({ method, ...options })])),
@@ -366,3 +369,24 @@ test('analysis stops polling after unauthorized, missing record or five network 
     assert.equal(h.calls.gets.length, error instanceof ApiError ? 1 : 5)
   }
 })
+
+ test('preference drafts survive a fresh page runtime and stay isolated by module', async () => {
+ const storage = new Map()
+ const first = harness(storage), p = first.page('preferences')
+ await p.emit('onLoad', {module:'hair'})
+ p.state.toggleStyle('自然松弛'); p.state.effort.value='5 分钟以内'; p.state.note.value='保留长度'
+ const refreshed = harness(storage), q = refreshed.page('preferences')
+ await q.emit('onLoad', {module:'hair'})
+ assert.deepEqual([...q.state.selected.value], ['自然松弛'])
+ assert.equal(q.state.note.value, '保留长度')
+ assert.equal(q.state.effort.value, '5 分钟以内')
+ await q.emit('onLoad', {module:'outfit'})
+ assert.equal(q.state.note.value, '')
+ await q.emit('onLoad', {module:'hair'})
+ assert.equal(q.state.note.value, '保留长度')
+ q.state.discard()
+ assert.equal(q.state.note.value, '')
+ const third=harness(storage), r=third.page('preferences')
+ await r.emit('onLoad', {module:'hair'})
+ assert.equal(r.state.note.value, '')
+ })

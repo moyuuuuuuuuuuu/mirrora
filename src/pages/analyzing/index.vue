@@ -30,6 +30,7 @@
   </view>
 </template>
 <script setup lang="ts">
+import {clearPreferenceDraft} from '../../preference-draft'
 import { computed, ref } from 'vue'
 import { onLoad, onShow, onHide, onUnload } from '@dcloudio/uni-app'
 import { getConsultation, ApiError, errorMessage } from '../../api'
@@ -102,6 +103,7 @@ onShow(() => {
       errors = 0
       activeModule.value = consultation.module
       if (consultation.status === 'succeeded') {
+        clearPreferenceDraft(consultation.module)
         stopPolling()
         uni.redirectTo({ url: `/pages/result/index?id=${consultation.id}` })
       }
