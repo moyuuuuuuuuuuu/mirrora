@@ -9,9 +9,10 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppHeader: typeof import('./components/AppHeader.vue')['default']
     ConsultationAside: typeof import('./components/ConsultationAside.vue')['default']
+    MirrorStudio: typeof import('./components/MirrorStudio.vue')['default']
     StepHeader: typeof import('./components/StepHeader.vue')['default']
-    WdCheckbox: typeof import('@wot-ui/ui/components/wd-checkbox/wd-checkbox.vue')['default']
-    WdSwitch: typeof import('@wot-ui/ui/components/wd-switch/wd-switch.vue')['default']
-    WdTextarea: typeof import('@wot-ui/ui/components/wd-textarea/wd-textarea.vue')['default']
+    StudioAccount: typeof import('./components/StudioAccount.vue')['default']
+    StudioIcon: typeof import('./components/StudioIcon.vue')['default']
+    UploadPhotoGuide: typeof import('./components/UploadPhotoGuide.vue')['default']
   }
 }

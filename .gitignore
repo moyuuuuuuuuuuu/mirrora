@@ -6,3 +6,4 @@ src/pages.json
 src/uni-pages.d.ts
 *.log
 .DS_Store
+outputs/

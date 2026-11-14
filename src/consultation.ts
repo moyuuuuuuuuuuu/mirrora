@@ -3,11 +3,11 @@ import { draft } from './state'
 
 export async function submitDraft(adultConfirmed: boolean, isActive: () => boolean) {
   // Keep the workflow and its inputs together even if the user starts another consultation.
-  const fingerprint = JSON.stringify([draft.module, draft.localPhoto, draft.localGarment, draft.presentation, draft.preferences, draft.includeBeauty])
+  const fingerprint = JSON.stringify([draft.module, draft.localPhoto, draft.localGarment, draft.presentation, draft.preferences, draft.includeBeauty, draft.parentConsultationId,draft.studio])
   if (draft.submissionFingerprint && draft.submissionFingerprint !== fingerprint)
     draft.requestId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
   draft.submissionFingerprint = fingerprint
-  const snapshot = { ...draft }
+  const snapshot = { ...draft, studio:draft.studio?JSON.parse(JSON.stringify(draft.studio)):undefined }
   const current = () => isActive() && draft.sessionId === snapshot.sessionId
     && draft.module === snapshot.module && draft.localPhoto === snapshot.localPhoto
     && draft.localGarment === snapshot.localGarment
@@ -15,7 +15,7 @@ export async function submitDraft(adultConfirmed: boolean, isActive: () => boole
     return
 
   const [person, garment] = await Promise.all([
-    snapshot.photoURL ? Promise.resolve({ url: snapshot.photoURL }) : uploadPhoto(snapshot.localPhoto),
+    snapshot.parentConsultationId ? Promise.resolve({ url: snapshot.photoURL }) : snapshot.photoURL ? Promise.resolve({ url: snapshot.photoURL }) : uploadPhoto(snapshot.localPhoto),
     snapshot.module === 'tryon'
       ? snapshot.garmentURL ? Promise.resolve({ url: snapshot.garmentURL }) : uploadPhoto(snapshot.localGarment)
       : Promise.resolve({ url: '' }),
@@ -23,9 +23,15 @@ export async function submitDraft(adultConfirmed: boolean, isActive: () => boole
   if (!current()) return
   draft.photoURL = person.url
   draft.garmentURL = garment.url
+  if(snapshot.studio && snapshot.module==='tryon') {
+    const slot=snapshot.studio.look.slots.tryon
+    if(slot)for(const item of slot.items)if(item.asset_url)item.asset_url=garment.url
+  }
   const consultation = await createConsultation({
     request_id: snapshot.requestId,
     module: snapshot.module,
+    ...(snapshot.studio?{studio:snapshot.studio}:{}),
+    ...(snapshot.parentConsultationId ? { parent_consultation_id: snapshot.parentConsultationId } : {}),
     photo_url: person.url,
     ...(snapshot.module === 'tryon' ? { garment_url: garment.url } : {}),
     presentation: snapshot.presentation,

@@ -14,13 +14,15 @@ function storedUser(): SessionUser | null {
 }
 
 export const currentUser = ref<SessionUser | null>(storedUser())
+export const loginRequested = ref(false)
 
 export function isLoggedIn() {
   return Boolean(currentUser.value && uni.getStorageSync('mirror_token'))
 }
 
 export function openLogin(redirect = 'modules') {
-  uni.navigateTo({ url: `/pages/login/index?redirect=${encodeURIComponent(redirect)}` })
+  void redirect
+  loginRequested.value = true
 }
 
 export function setCurrentUser(user: SessionUser | null) {
@@ -35,7 +37,5 @@ export function expireSession() {
   uni.removeStorageSync('mirror_token')
   setCurrentUser(null)
   startConsultation(draft.module)
-  const pages = getCurrentPages()
-  if (pages.at(-1)?.route !== 'pages/login/index')
-    openLogin('profile')
+  openLogin('profile')
 }

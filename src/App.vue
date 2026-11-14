@@ -4,5 +4,6 @@ export default {
 }
 </script>
 <style lang="scss">
-@import './styles/theme.scss';
+@use './styles/theme.scss';
+@use './studio/studio.scss';
 </style>

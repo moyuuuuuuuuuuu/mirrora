@@ -14,10 +14,5 @@ export default defineUniPages({
     {path:'pages/user-agreement/index'},
     {path:'pages/privacy-policy/index'}
   ],
-  globalStyle:{navigationStyle:'custom',backgroundColor:'#f4f5f7',backgroundTextStyle:'dark'},
-  tabBar:{color:'#8b8e94',selectedColor:'#701f32',backgroundColor:'#ffffff',borderStyle:'white',list:[
-    {pagePath:'pages/index/index',text:'顾问'},
-    {pagePath:'pages/tryon/index',text:'试衣间'},
-    {pagePath:'pages/profile/index',text:'我的'}
-  ]}
+  globalStyle:{navigationStyle:'custom',backgroundColor:'#a89882',backgroundTextStyle:'light',disableScroll:true}
 })

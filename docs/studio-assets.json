@@ -1,0 +1,25 @@
+{
+  "method": "Built-in image_gen; WebP encoding via sharp, quality 88. Original generated PNGs remain outside the published static tree.",
+  "assets": [
+    {
+      "path": "src/static/studio/room.webp",
+      "prompt": "Photorealistic background ASSET for a full screen luxury virtual styling mirror web app. Wide landscape 16:9 empty contemporary warm taupe dressing studio. Cream plaster walls, subtle tall arched recess in center back, floor to ceiling windows on RIGHT casting soft late afternoon natural sunlight, travertine glossy floor with gentle reflections, small sculptural cream armchair on far right, minimalist stone console with a tiny vase on far left. Central 55 percent of image completely empty to place a full body person. Camera level straight-on, architectural editorial photography, natural muted warm gray beige tones, realistic materials, calm and elegant, restrained contrast. NO people, NO text, NO UI, NO mirror frame, NO borders, NO logos. Background only, production asset."
+    },
+    {
+      "path": "src/static/studio/person.webp",
+      "transparent": true,
+      "prompt": "Production web asset: one full-body photorealistic adult East Asian woman age 28, elegant natural shoulder-length dark brown soft wavy hair, realistic natural skin, ivory relaxed blazer over white tank top, charcoal tailored wide-leg trousers, black low heel shoes. Straight front facing relaxed standing posture, hands lightly in trouser pockets, pleasant neutral expression. Soft warm daylight from right. Fashion catalog editorial photograph. Entire body fully visible head to both shoes with tight framing but small padding, portrait 2:3 aspect ratio. ISOLATED on genuinely TRANSPARENT background with alpha, no room, no floor, no text, no UI, no frame, no checkerboard baked in. Clean silhouette edges suitable for placing in a warm beige virtual styling mirror room."
+    },
+    {
+      "path": "src/static/studio/person-weekend.webp",
+      "transparent": true,
+      "reference": "person.webp",
+      "prompt": "Edit this full-body transparent fashion catalog asset. Preserve exact same adult woman's identity, face, body proportions, pose, camera, entire head to shoes framing and transparent background. Change outfit to chic oatmeal soft knit cardigan with ivory wide leg trousers and tan loafers, shoulder length softly waved hair stays the same. Hands in same relaxed pockets pose. Natural elegant weekend outfit. Keep lighting identical and genuinely transparent alpha background, no room, no text, no UI, no cropped feet. This is second pre-generated demo look for a virtual styling app."
+    },
+    {
+      "path": "src/static/studio/upload-guide.svg",
+      "method": "Repository-native SVG illustration",
+      "purpose": "Single adult, full body including shoes, relaxed visible arms; upload photography guidance, not generated result"
+    }
+  ]
+}

@@ -1,108 +1,13 @@
-<template>
-  <view class="page">
-    <AppHeader />
-    <view class="content detail">
-      <view class="crumb">我的形象档案　/　{{module.name}}　/　历史记录</view>
-      <view class="detail-head">
-        <view><view class="section-title">{{isTryon?'试穿记录':`${module.name}咨询记录`}}</view><small v-if="item">{{new Date(item.created_at).toLocaleString()}}</small></view>
-        <view class="actions"><view class="editorial-btn" @click="again">{{isTryon?'再次试穿':'再次咨询'}}</view><view v-if="item?.result_image_url" class="editorial-btn ghost-btn" @click="download">保存结果图</view></view>
-      </view>
-      <view v-if="loading" class="state">正在载入记录…</view>
-      <view v-else-if="error" class="state">{{error}}</view>
-      <view v-if="warning" class="result-warning">{{warning}}</view>
-      <view v-if="!loading&&!error&&item" class="record" :class="{tryon:isTryon,'without-result':!item.result_image_url}">
-        <view class="image-panel"><text>人物原图</text><image :src="item.photo_url" mode="aspectFit"/></view>
-        <view v-if="isTryon" class="image-panel garment"><text>服装参考</text><image :src="item.garment_url" mode="aspectFit"/></view>
-        <view v-if="item.result_image_url" class="image-panel"><text>{{isTryon?'试穿结果':'推荐效果'}}</text><image :src="item.result_image_url" mode="aspectFit"/></view>
-        <view class="advice">
-          <view class="section-title">{{isTryon?'本次试穿说明':'本次形象建议'}}</view>
-          <view v-if="item.preferences" class="prefs"><b>我的要求</b><text>{{item.preferences}}</text></view>
-          <rich-text class="analysis" :nodes="analysisHtml" />
-          <view v-if="isTryon" class="notice">服装范围由 AI 根据上传图片自动判断，图片可为上装、下装、连衣裙、外套或套装。</view>
-        </view>
-      </view>
-    </view>
-  </view>
-</template>
-
+<template><view class="route-loading">正在返回镜面…</view></template>
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { getConsultation, type Consultation } from '../../api'
-import { startConsultation, modules } from '../../state'
-import { resultWarning } from '../../result-quality'
-
-import { renderMarkdown } from '../../markdown'
-// #ifdef H5
-import { downloadInBrowser, openImageInBrowser } from '../../download'
-// #endif
-
-const item = ref<Consultation>()
-const loading = ref(true)
-const error = ref('')
-const module = computed(() => modules[(item.value?.module || 'hair') as keyof typeof modules])
-const isTryon = computed(() => item.value?.module === 'tryon')
-const warning = computed(() => resultWarning(item.value))
-const analysisHtml = computed(() => renderMarkdown(item.value?.analysis || '本次咨询未返回文字建议。'))
-
-onMounted(async () => {
-  const page = getCurrentPages().at(-1) as { options?: Record<string, string> } | undefined
-  const id = String(page?.options?.id || '')
-  try {
-    if (!id) throw new Error('missing_id')
-    item.value = await getConsultation(id)
-  } catch {
-    error.value = '记录不存在或暂时无法读取'
-  } finally {
-    loading.value = false
-  }
+import { onLoad } from '@dcloudio/uni-app'
+onLoad(query=>{
+  const params: Record<string,string> = {}
+  const panel = 'history'
+  if(panel)params.panel=panel
+  if(query?.module)params.mode=String(query.module)
+  if(query?.id)params.id=String(query.id)
+  uni.reLaunch({url:`/pages/index/index?${Object.entries(params).map(([key,value])=>key+'='+encodeURIComponent(value)).join('&')}`})
 })
-
-function again() {
-  if (!item.value) return
-  if (isTryon.value) {
-    startConsultation('tryon', {
-      localPhoto: item.value.photo_url,
-      photoURL: item.value.photo_url,
-      localGarment: item.value.garment_url || '',
-      garmentURL: item.value.garment_url || '',
-      presentation: item.value.presentation,
-      preferences: item.value.preferences || '',
-    })
-    uni.switchTab({ url: '/pages/tryon/index' })
-    return
-  }
-  uni.navigateTo({ url: `/pages/preferences/index?module=${item.value.module}` })
-}
-
-async function download() {
-  if (!item.value?.result_image_url) return
-  uni.showLoading({ title: '正在保存' })
-  let url = ''
-  try {
-    // Refresh short-lived links before saving a page left open for a while.
-    const latest = await getConsultation(item.value.id)
-    url = latest.result_image_url || ''
-    if (!url) throw new Error('image_unavailable')
-    // #ifdef H5
-    try { await downloadInBrowser(url, `mirrora-${latest.id}.png`) }
-    catch { openImageInBrowser(url); uni.showToast({ title: '可在打开的图片页保存', icon: 'none' }) }
-    // #endif
-    // #ifndef H5
-    const res = await uni.downloadFile({ url })
-    if (res.statusCode !== 200) throw new Error('download_failed')
-    await uni.saveImageToPhotosAlbum({ filePath: res.tempFilePath })
-    uni.showToast({ title: '已保存到相册', icon: 'success' })
-    // #endif
-  } catch { uni.showToast({ title: '保存失败，请稍后重试', icon: 'none' }) }
-  finally { uni.hideLoading() }
-}
-
 </script>
-<style scoped>
-.result-warning{padding:16px 18px;margin-bottom:18px;background:#fff4e9;border:1px solid #dec7a8;color:#74512c;font-size:14px;line-height:1.8}
-@media(min-width:900px){.record.without-result{grid-template-columns:290px 1fr}.record.tryon.without-result{grid-template-columns:1fr 1fr}}
-</style>
-
-<style scoped>
-.detail{margin-top:35px}.crumb{font-family:"Songti SC",serif;color:#676b72}.detail-head{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:22px 0}.detail-head small{display:block;color:#777;margin-top:8px}.actions{display:flex;gap:10px}.record{display:grid;gap:24px;background:rgba(255,255,255,.72);padding:18px}.image-panel>text{display:block;font-family:"Songti SC",serif;font-size:18px;margin-bottom:14px}.image-panel image{width:100%;height:420px;background:#eef0f2}.prefs{display:grid;gap:8px;padding:16px 0;border-bottom:1px solid var(--line)}.prefs b{font-family:"Songti SC",serif}.prefs text,.notice{white-space:pre-wrap;line-height:1.9}.analysis{display:block;margin-top:18px;line-height:1.9}.analysis :deep(h1),.analysis :deep(h2),.analysis :deep(h3),.analysis :deep(h4){font-family:"Songti SC",serif;line-height:1.4;margin:18px 0 8px}.analysis :deep(h1){font-size:24px}.analysis :deep(h2){font-size:21px}.analysis :deep(h3){font-size:18px}.analysis :deep(h4){font-size:16px}.analysis :deep(p){margin:8px 0}.analysis :deep(ol),.analysis :deep(ul){margin:8px 0;padding-left:24px}.analysis :deep(li){margin:4px 0}.analysis :deep(a){color:#a80e2b;text-decoration:underline}.analysis :deep(blockquote){margin:12px 0;padding:2px 14px;border-left:3px solid #a80e2b;color:#676b72}.analysis :deep(code){padding:2px 5px;background:#f1f2f3;border-radius:3px}.notice{color:#676b72;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}.state{padding:70px 20px;text-align:center;background:rgba(255,255,255,.7);color:#676b72}@media(max-width:650px){.detail-head{align-items:flex-start;flex-direction:column}.actions{width:100%;flex-direction:column}.image-panel image{height:390px}}@media(min-width:900px){.record{grid-template-columns:290px 370px 1fr}.record.tryon{grid-template-columns:1fr 1fr 1.2fr}.record.tryon .advice{grid-column:1/-1}.image-panel image{height:500px}}
-</style>
+<style scoped>.route-loading{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#887762;color:#f6edde;font-size:14px}</style>
